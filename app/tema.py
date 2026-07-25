@@ -1,0 +1,153 @@
+"""Tema visual do Acervo DS — dark moderno com neon suave.
+
+Tudo que é *cor e forma* mora aqui: a paleta exportada (usada também nos
+gráficos do dashboard) e o CSS injetado uma vez por página. O restante do
+app não conhece hex de cor nenhum — se o visual mudar, muda num lugar só.
+"""
+import streamlit as st
+
+# Paleta — neon suavizado sobre fundo quase-preto arroxeado
+FUNDO = "#0e0b16"
+FUNDO_CARD = "#151021"
+ROXO = "#a78bfa"
+ROXO_PROFUNDO = "#7c3aed"
+CIANO = "#7dd3fc"
+ROSA = "#f0a6ce"
+VERDE = "#6ee7b7"
+AMBAR = "#fcd34d"
+TEXTO = "#e9e4f7"
+TEXTO_SUAVE = "#9a93b8"
+BORDA = "rgba(167, 139, 250, 0.26)"
+GRADE_GRAFICO = "rgba(233, 228, 247, 0.07)"
+
+_CSS = f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+html, body, [data-testid="stAppViewContainer"] * {{
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+}}
+code, pre, [data-testid="stCode"] * {{
+    font-family: 'JetBrains Mono', 'Cascadia Code', monospace !important;
+}}
+/* os ícones do Streamlit são ligaduras da fonte Material Symbols — sem ela
+   voltam a ser texto ("arrow_right"); o override global de Inter acima não
+   pode alcançá-los */
+[data-testid="stIconMaterial"], span[class*="material-symbols"] {{
+    font-family: 'Material Symbols Rounded' !important;
+}}
+
+/* esconde o chrome padrão do Streamlit — o app tem navbar própria */
+[data-testid="stHeader"], [data-testid="stToolbar"] {{ display: none; }}
+.block-container {{ padding-top: 1.1rem; padding-bottom: 3rem; max-width: 1150px; }}
+
+/* ---------- navbar ---------- */
+div[class*="st-key-navbar"] {{
+    position: sticky; top: 0; z-index: 99;
+    background: rgba(14, 11, 22, 0.86);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid {BORDA};
+    border-radius: 14px;
+    padding: 0.55rem 1.2rem;
+    margin-bottom: 1.6rem;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}}
+.marca {{
+    font-size: 1.25rem; font-weight: 800; letter-spacing: 0.01em;
+    color: {TEXTO}; display: flex; align-items: center; gap: 0.55rem;
+}}
+.marca-ponto {{
+    width: 11px; height: 11px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, {CIANO}, {ROXO_PROFUNDO});
+    box-shadow: 0 0 12px {ROXO_PROFUNDO}aa;
+}}
+.grad {{
+    background: linear-gradient(92deg, {ROXO} 10%, {CIANO} 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}}
+div[class*="st-key-nav_paginas"] {{ display: flex; justify-content: flex-end; }}
+
+/* ---------- hero (estado inicial da busca) ---------- */
+.hero {{ text-align: center; padding: 2.4rem 0 0.8rem 0; }}
+.hero h1 {{
+    font-size: 2.3rem; font-weight: 800; line-height: 1.25;
+    color: {TEXTO}; margin-bottom: 0.7rem;
+}}
+.hero p {{ color: {TEXTO_SUAVE}; font-size: 1.02rem; max-width: 620px; margin: 0 auto; }}
+.hero .destaque {{ color: {CIANO}; font-weight: 600; }}
+
+/* ---------- cards de resultado ---------- */
+div[class*="st-key-card_"] {{
+    background: linear-gradient(180deg, {FUNDO_CARD} 0%, #120e1d 100%);
+    border: 1px solid {BORDA};
+    border-radius: 14px;
+    padding: 1.05rem 1.25rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}}
+div[class*="st-key-card_"]:hover {{
+    border-color: rgba(167, 139, 250, 0.55);
+    box-shadow: 0 0 26px rgba(124, 58, 237, 0.16);
+    transform: translateY(-1px);
+}}
+.card-topo {{ display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 0.45rem; }}
+.card-caminho {{
+    color: {TEXTO_SUAVE}; font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace !important;
+    overflow-wrap: anywhere;
+}}
+.card-titulo {{ font-size: 1.08rem; font-weight: 700; color: {TEXTO}; margin-bottom: 0.25rem; }}
+.card-explicacao {{ color: {TEXTO_SUAVE}; font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.35rem; }}
+.card-meta {{ color: {TEXTO_SUAVE}; font-size: 0.78rem; letter-spacing: 0.02em; }}
+
+.acervo-chip {{
+    display: inline-block; padding: 0.14rem 0.65rem;
+    border: 1px solid; border-radius: 999px;
+    font-size: 0.74rem; font-weight: 600; letter-spacing: 0.03em;
+    white-space: nowrap;
+}}
+
+/* ---------- cartões de métrica (dashboard) ---------- */
+.acervo-metrica {{
+    background: linear-gradient(180deg, {FUNDO_CARD} 0%, #120e1d 100%);
+    border: 1px solid {BORDA};
+    border-top: 2px solid var(--cor-metrica, {ROXO});
+    border-radius: 14px;
+    padding: 1.05rem 1.2rem;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    transition: box-shadow 0.2s ease;
+}}
+.acervo-metrica:hover {{ box-shadow: 0 0 22px color-mix(in srgb, var(--cor-metrica) 18%, transparent); }}
+.acervo-metrica .valor {{ font-size: 1.9rem; font-weight: 800; color: {TEXTO}; line-height: 1.1; }}
+.acervo-metrica .rotulo {{
+    color: {TEXTO_SUAVE}; font-size: 0.8rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem;
+}}
+
+/* ---------- inputs, botões e código ---------- */
+[data-testid="stTextInput"] input {{ padding: 0.85rem 1rem; font-size: 1.02rem; }}
+[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {{
+    border-color: {ROXO};
+    box-shadow: 0 0 0 1px {ROXO}55, 0 0 20px {ROXO_PROFUNDO}30;
+}}
+.stButton button {{ transition: border-color 0.15s ease, box-shadow 0.15s ease; }}
+.stButton button:hover:enabled {{
+    border-color: {ROXO};
+    box-shadow: 0 0 14px rgba(124, 58, 237, 0.25);
+}}
+[data-testid="stCode"] {{ border: 1px solid rgba(167, 139, 250, 0.14); border-radius: 10px; }}
+
+/* ---------- diálogo (arquivo completo) ---------- */
+div[role="dialog"] {{
+    background: #14101f;
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.18);
+}}
+</style>
+"""
+
+
+def aplicar_tema() -> None:
+    """Injeta o CSS do tema — chamar uma única vez, logo após set_page_config."""
+    st.markdown(_CSS, unsafe_allow_html=True)
