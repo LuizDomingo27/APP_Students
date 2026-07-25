@@ -1,0 +1,67 @@
+{
+  "b75c83cebda97d98f75947937e9f16104dc3a916eecad5e208523b2056e7f7ae": [
+    "SQL_SERVER/4_TSQLServer-20260725T152615Z-1-001/4_TSQLServer",
+    "SQL_SERVER/4_TSQLServer-20260725T152750Z-1-001/4_TSQLServer"
+  ],
+  "27774929e1d55c6c761ebd6d184043e1c125eec10ac55272a2c16b8b16a02ffc": [
+    "SQL_SERVER/querys_da_aula (6)/querys_da_aula",
+    "SQL_SERVER/querys_da_aula (7)/querys_da_aula"
+  ],
+  "94761ef166eb99cf5314ecce352819e1da0490faa2082d5e6b0a4801e801decc": [
+    "DataBriks2/Anac",
+    "DataBriks2/Arquivos Dowload/Anac"
+  ],
+  "9009915c1ebc0b802a458ee413ed17cbca4528712b3fc61246eacdade8ff1d4a": [
+    "DataBriks2/arquivos_csv",
+    "DataBriks2/Arquivos Dowload/arquivos_csv"
+  ],
+  "8f713aeafa58a6a152883f3367fcd55cc26aad276b436e4b1823091bd79fb21e": [
+    "DataBriks2/Bike Store",
+    "DataBriks2/Arquivos Dowload/Bike Store",
+    "Engenharia_PY/Bikes/Bike"
+  ],
+  "74f244e089518d41041734a5d924a2cf7c87fe75a999d6c245725949eab13007": [
+    "DataBriks2/Scripts dbc",
+    "DataBriks2/Arquivos Dowload/Scripts dbc"
+  ],
+  "3b571e834af077aec9d43a51605573aba94b33f4ed9ee2f7ae00043768ef182b": [
+    "DataBriks2/Scripts Separados",
+    "DataBriks2/Arquivos Dowload/Scripts Separados"
+  ],
+  "8aa70e7d893ccf79383f398a27161caeba19f4c908a6281d17e7c1cffe40e687": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_csv",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_csv",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_csv"
+  ],
+  "ae6896394e08f7f1e3a9178783f66f29322c5bab7d1e5bea7f14653648d3b296": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel"
+  ],
+  "a3567586315ba9340e6c8483d6b45c18509f8abc16bc8f460edb225d027af569": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt"
+  ],
+  "5c7e8a375c8ecacaeb0236633d379d740dc91c7be3c87098b91b4b684741ef02": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar"
+  ],
+  "65fdec897414d392861c163bf4cd553e29e4ec04e447583b31715c6da5effec9": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Arquivos consolidados",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Arquivos consolidados",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Arquivos consolidados"
+  ],
+  "c055bdfdba6d776123d5e5d448df2ce9284b37fd5fa31dbee7130b401a614928": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Concat",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Concat",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Concat"
+  ],
+  "fb6f616d31e77a49a3152d8e12044985e732791b4810d89c5c879b2a4700869b": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Files",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Files"
+  ],
+  "bec73dce90899e8bdfa8585b82e8b1100bea9d71a8b5f46a11f0f45bbc5fec31": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt"
+  ]
+}

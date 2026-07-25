@@ -1,0 +1,42 @@
+{
+  "SQL_SERVER": {
+    "categoria": "SQL Server",
+    "subcategoria": null,
+    "cor": "#a78bfa"
+  },
+  "POSTGREES": {
+    "categoria": "PostgreSQL",
+    "subcategoria": null,
+    "cor": "#c084fc"
+  },
+  "Estatistica_DS": {
+    "categoria": "Estatística",
+    "subcategoria": null,
+    "cor": "#818cf8"
+  },
+  "DataBriks2": {
+    "categoria": "Databricks",
+    "subcategoria": "Módulo 1",
+    "cor": "#38bdf8"
+  },
+  "Databriks_Udemy": {
+    "categoria": "Databricks",
+    "subcategoria": "Módulo 2",
+    "cor": "#22d3ee"
+  },
+  "Engenharia_PY": {
+    "categoria": "Engenharia de Dados",
+    "subcategoria": null,
+    "cor": "#34d399"
+  },
+  "Scripts_SQL": {
+    "categoria": "Scripts SQL",
+    "subcategoria": null,
+    "cor": "#f472b6"
+  },
+  "DataScience_UD": {
+    "categoria": "Data Science",
+    "subcategoria": null,
+    "cor": "#fb923c"
+  }
+}

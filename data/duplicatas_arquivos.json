@@ -1,0 +1,314 @@
+{
+  "7b2e523606af5817057bb945f0f02376169981ca0c25bb5a0ac9a6b6902947e1": [
+    "SQL_SERVER/4_TSQLServer-20260725T152615Z-1-001/4_TSQLServer/Base_Fraude.csv",
+    "SQL_SERVER/4_TSQLServer-20260725T152750Z-1-001/4_TSQLServer/Base_Fraude.csv"
+  ],
+  "5eced840e5ba029398f736e47fe3c286b43341c3f4999a9c07167ba24e386bdf": [
+    "SQL_SERVER/4_TSQLServer-20260725T152615Z-1-001/4_TSQLServer/exemplo_tabela.json",
+    "SQL_SERVER/4_TSQLServer-20260725T152750Z-1-001/4_TSQLServer/exemplo_tabela.json"
+  ],
+  "7ae2561ffe1b8fcb9786b22b51d7de2b70d53921b7eeef2715d68cf86a4f1d7e": [
+    "SQL_SERVER/querys_da_aula (6)/querys_da_aula/querys_da_aula.txt",
+    "SQL_SERVER/querys_da_aula (7)/querys_da_aula/querys_da_aula.txt"
+  ],
+  "abbaf213977290d13179041683e4b031ec3c2a89e831835059c918539f8e740c": [
+    "DataBriks2/04. Arquivos CSV.ipynb",
+    "DataBriks2/Scripts Separados/04. Arquivos CSV.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/04. Arquivos CSV.ipynb"
+  ],
+  "9714c5a5005f1fd266875e05bf0d61632421886f5e124d3a7bdd16de9597e53a": [
+    "DataBriks2/07. Arquivo Parquet Particionamento.ipynb",
+    "DataBriks2/Scripts Separados/07. Arquivo Parquet Particionamento.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/07. Arquivo Parquet Particionamento.ipynb"
+  ],
+  "8e72addbbfe801494f0160db8c77ba15b76cb2510e75a7915e1413e3d1068082": [
+    "DataBriks2/Anac/V_OCORRENCIA_AMPLA.csv",
+    "DataBriks2/Arquivos Dowload/Anac/V_OCORRENCIA_AMPLA.csv"
+  ],
+  "e72cfea8c28dc3d27a7b2cf8e83518f1c3ac1e603669115b8be056716c433a1b": [
+    "DataBriks2/Anac/V_OCORRENCIA_AMPLA.json",
+    "DataBriks2/Arquivos Dowload/Anac/V_OCORRENCIA_AMPLA.json"
+  ],
+  "b131204bece040db077a033f6df772927e3afc7077a25d687c974ea02602f723": [
+    "DataBriks2/arquivos_csv/Clientes.csv",
+    "DataBriks2/Arquivos Dowload/arquivos_csv/Clientes.csv",
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_csv/Clientes - Copia (2).csv",
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_csv/Clientes - Copia.csv",
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_csv/Clientes.csv",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_csv/Clientes - Copia (2).csv",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_csv/Clientes - Copia.csv",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_csv/Clientes.csv",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_csv/Clientes - Copia (2).csv",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_csv/Clientes - Copia.csv",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_csv/Clientes.csv"
+  ],
+  "d259593f655c76850ae121cea7010e2802f847daabc08080d1e00793fddbbc2e": [
+    "DataBriks2/Bike Store/brands.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/brands.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/brands.csv",
+    "Engenharia_PY/Bikes/Bike/brands.csv"
+  ],
+  "c5584d686e910e7709d474223c1db562426b32bd57e9780a21241e1870e2f7bc": [
+    "DataBriks2/Bike Store/categories.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/categories.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/categories.csv",
+    "Engenharia_PY/Bikes/Bike/categories.csv"
+  ],
+  "e1431dec458bbebed6d778134a837caa37b142cc80f5e0ab8dceff4737532e6d": [
+    "DataBriks2/Bike Store/customers.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/customers.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/customers.csv",
+    "Engenharia_PY/Bikes/Bike/customers.csv"
+  ],
+  "5b9c0c9468a57e3c2d3d11e6d94a6c4036c0922793f64e20090dee54aa6d9dee": [
+    "DataBriks2/Bike Store/orders.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/orders.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/orders.csv",
+    "Engenharia_PY/Bikes/Bike/orders.csv"
+  ],
+  "5df5c49ea195fd18a2c03d9f153e16594b41ab2bad4186f93835bbb1509b4381": [
+    "DataBriks2/Bike Store/order_items.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/order_items.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/order_items.csv",
+    "Engenharia_PY/Bikes/Bike/order_items.csv"
+  ],
+  "112630ab4c07f6c8220bef31de3d0e71138d4f006605e28beeb72acc78d11458": [
+    "DataBriks2/Bike Store/products.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/products.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/products.csv",
+    "Engenharia_PY/Bikes/Bike/products.csv"
+  ],
+  "707ddfac6c8846102f66b3d64d40cc8cad448c353d5b33e43284f316835d2fb1": [
+    "DataBriks2/Bike Store/schema.png",
+    "DataBriks2/Arquivos Dowload/Bike Store/schema.png",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/schema.png",
+    "Engenharia_PY/Bikes/Bike/schema.png"
+  ],
+  "0670781a1aff34b723362577a68cf761fbe7e36d0283508c5392c5be57b3f81c": [
+    "DataBriks2/Bike Store/staffs.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/staffs.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/staffs.csv",
+    "Engenharia_PY/Bikes/Bike/staffs.csv"
+  ],
+  "337d4b486c3c65aeda9a1e5070ee437778919789d134365130a81d98154f7d67": [
+    "DataBriks2/Bike Store/stocks.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/stocks.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/stocks.csv",
+    "Engenharia_PY/Bikes/Bike/stocks.csv"
+  ],
+  "394b5f1f8752fe6fb75d2246450f27013a31ddd7040287abcc51b9ca9e7ae8ad": [
+    "DataBriks2/Bike Store/stores.csv",
+    "DataBriks2/Arquivos Dowload/Bike Store/stores.csv",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Origem de dados/Bikes/stores.csv",
+    "Engenharia_PY/Bikes/Bike/stores.csv"
+  ],
+  "38a99cb2ff94af54088bfdbd166d6d1781e03de2f6d492d6eb3f9f1624932220": [
+    "DataBriks2/Scripts dbc/Scripts.dbc",
+    "DataBriks2/Arquivos Dowload/Scripts dbc/Scripts.dbc"
+  ],
+  "4262a9c982deedfa1dcacad66e2388b0eaed43f3e6504d11aed4b97ba02506b7": [
+    "DataBriks2/Scripts Separados/01.Primeiros comandos.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/01.Primeiros comandos.ipynb"
+  ],
+  "568195fc48423d566aa652e4d56d4275496992b89b41e86805314f3820bc3756": [
+    "DataBriks2/Scripts Separados/02. Criando Tabelas Via Comando SQL.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/02. Criando Tabelas Via Comando SQL.ipynb"
+  ],
+  "e9fc1f8c48bd515e5443e6607caf3fe0f89e9af9b44549376bb1be4f093c8e39": [
+    "DataBriks2/Scripts Separados/03. Transformado Consulta de Tabela SQL em DataFlame.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/03. Transformado Consulta de Tabela SQL em DataFlame.ipynb"
+  ],
+  "97db6753941268eff0d6df76b2aa316caffe42ba3458acbc82e5cea19c3386d1": [
+    "DataBriks2/Scripts Separados/04.Arquivos CSV.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/04.Arquivos CSV.ipynb"
+  ],
+  "9b0a6004891a656e73deea3fc97f4374bd6a7899570a4649afac7f73bde73758": [
+    "DataBriks2/Scripts Separados/05. Arquivos Json.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/05. Arquivos Json.ipynb"
+  ],
+  "d672a79dd69fe5773fbfd2a8fa55d163e3345699a0a94cff10c4531ba30d5a24": [
+    "DataBriks2/Scripts Separados/06. Arquivo Parquet.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/06. Arquivo Parquet.ipynb"
+  ],
+  "b24b26451cb5b9cffea1093e62ad541ac5aee266c99ed820a071b79b1296c00b": [
+    "DataBriks2/Scripts Separados/08. Sistema interno de Arquivo.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/08. Sistema interno de Arquivo.ipynb"
+  ],
+  "a8d8d30d08ebdcf0833b1bb0e00923591f5097c362fa6895e0131c0896a9663c": [
+    "DataBriks2/Scripts Separados/09. Conectando Databricks com Power BI.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/09. Conectando Databricks com Power BI.ipynb"
+  ],
+  "0f0a716a5b7334cf1298c6622dbabbf8304cb0609fa440ffad10237f9d21b845": [
+    "DataBriks2/Scripts Separados/10. Filtro de Dados no Databricks.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/10. Filtro de Dados no Databricks.ipynb"
+  ],
+  "a6cb896895a3822a9bfa67a47b95d465120cca6f457766a7ab32b0a4bee872dd": [
+    "DataBriks2/Scripts Separados/11. Manipulação de Colunas.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/11. Manipulação de Colunas.ipynb"
+  ],
+  "496c9daf1e8578f8180ed5b9a47951e24ebb77785293495f68280cc1f861b040": [
+    "DataBriks2/Scripts Separados/12. Conversão de Dados.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/12. Conversão de Dados.ipynb"
+  ],
+  "a3246ff1f18c5e956874cfe692fdbaca244033955a541a62e78712b16188c3a9": [
+    "DataBriks2/Scripts Separados/13. Tratando Dados nulos.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/13. Tratando Dados nulos.ipynb"
+  ],
+  "b01ba8a39bb51c93c491b2b40b9acdfb7bfe068b28a96d618e6b999a09e0d3ec": [
+    "DataBriks2/Scripts Separados/14. Funções de agregações.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/14. Funções de agregações.ipynb"
+  ],
+  "c23dcab1b0a329f8891639c0fd13540e0480025b59aa3b07e1e9caa75134fcb7": [
+    "DataBriks2/Scripts Separados/15. Delta Lake Transações e Controle de dados.ipynb",
+    "DataBriks2/Arquivos Dowload/Scripts Separados/15. Delta Lake Transações e Controle de dados.ipynb"
+  ],
+  "f9f674dc12da31791b60694d201095ea6a58e51dcccc9383ccec3df08ce69031": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Centro-Oeste/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Centro-Oeste/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "4f4c66194eaa0359cd0d363268fbe74936b09e2222e2d1443b4cf9cb7da68d3a": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Nordeste/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Nordeste/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "58aff4c204e87ea413a74a44636363c54ce6ad831a0951a17b161ab9c258bdf6": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Norte/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Norte/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "5854e6acbbb48ea3c04429bcadb6ee0e8722a3cabc0626b4fd3f2902dbc3633a": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Sudeste/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Sudeste/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "c4bb973109df4f5413631ff0849f510f2a61728f69ec317713620409be8b8366": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Sul/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=Sul/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "e9c89bed6cd1b3a354eafaaeb9026fdef4f27f2ff7e6f4a84c41b869341df328": [
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=__HIVE_DEFAULT_PARTITION__/084c01fe9483436e8e4077572ccecbba-0.parquet",
+    "Engenharia_PY/01.+Postgree/01. Postgree/Destino/Anac_particonado.parquet/regiao=__HIVE_DEFAULT_PARTITION__/8cf514679546445b9f9b6187430be510-0.parquet"
+  ],
+  "c439e15c9dfe3d1f96a38677e5f90d8c0ef648a1c0adc6c3904ecfe18c3dcb53": [
+    "Engenharia_PY/03.+SQLite/03. SQLite/Banco de Dados/primeiro_banco",
+    "Engenharia_PY/03.+SQLite/03. SQLite/Banco de Dados/primeiro_banco - Copia"
+  ],
+  "9dfe3eefbd6487a46c0542fd0fb32de51829b9e7e26348bce828b213a0ddb8f2": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/Caquinha.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Caquinha.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Caquinha.xlsx"
+  ],
+  "4148c4181ae972a1c40c4205cac6286982b84d849beb378b1f0e1f3a25e59ea6": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/Categoria.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Categoria.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Categoria.xlsx"
+  ],
+  "41f83d86b9b74f734c09edaa645124779144d590ab76cc512cc4adeb812a65c9": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/items.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/items.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/items.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/items.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/items.xlsx"
+  ],
+  "177df876b8b2181964239fba69e0f1453ad88c4f72f6bff703b2580118f23839": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/Ordens.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Ordens.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Ordens.xlsx"
+  ],
+  "f581d354d943d44b3e91f5e741587673e49e32e2a43ddf4d765fe286e0348d6a": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/Produto.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Produto.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Produto.xlsx"
+  ],
+  "585cbd85d17af9fd5b1882f751c00965cb35ed1e4606ef286a514c9d78fa2369": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/VendasProj2.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/VendasProj2.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/VendasProj2.xlsx"
+  ],
+  "5e196a5bf33591043b1c5f6e60f81cfe9930b98fa7812800197c02657b817a48": [
+    "Engenharia_PY/04.+ETL+Pandas/04. ETL Pandas/arquivos_excel/~$Caquinha.xlsx",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/~$Caquinha.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/~$Caquinha.xlsx"
+  ],
+  "9387ac241989446413edea5f02a771a5698d3a8c165d2b05907ca3757ee8990d": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Despesas.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Files/Despesas 01.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Files/Despesas 02.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Files/Despesas 03.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Despesas.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Files/Despesas 01.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Files/Despesas 02.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Files/Despesas 03.txt"
+  ],
+  "64dd1d2dd864d439e2d3b31336f59ac2481ca5d74ef2662b104e33100b72ab70": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/Vendas.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/teste2.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia (2) - Copia.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia (2).txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia (3) - Copia.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia (4) - Copia.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia (5) - Copia.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas - Copia.txt",
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_txt/foreachtxt/Vendas.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/Vendas.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/teste2.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia (2) - Copia.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia (2).txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia (3) - Copia.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia (4) - Copia.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia (5) - Copia.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas - Copia.txt",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_txt/foreachtxt/Vendas.txt"
+  ],
+  "238eaa91902e8f39e351fadb86c7c9fc0a2fc273c3620d26eb4777724a4486f9": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Vendas2021.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Vendas2021.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Vendas2021.xlsx"
+  ],
+  "5e78af598545743d74c7df8f817deaec32d08393db1f326bbfea36ba78b15dde": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Vendas2022.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Vendas2022.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Vendas2022.xlsx"
+  ],
+  "74ef6f5ded1d0a53f2387992efa9d28f6243ae5c0517f9b48c0fab4c31f71326": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Vendas2023.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Vendas2023.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Vendas2023.xlsx"
+  ],
+  "1a49975753752d45405cbdad2118d5fc92f3b4a96d12d5c140f9e13823e70f99": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Arquivos consolidados/VendasGeraldelete.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Arquivos consolidados/VendasGeraldelete.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Arquivos consolidados/VendasGeraldelete.xlsx"
+  ],
+  "cd62df3aa3c0f29dc54846f84263df129d959b5960cd513314a307bad94b8c7b": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Arquivos consolidados/VendasGeralteste.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Arquivos consolidados/VendasGeralteste.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Arquivos consolidados/VendasGeralteste.xlsx"
+  ],
+  "2a96ae66ff99e744df5057b8cf46c0066f52347c66d157c571fc48a2a08ecf53": [
+    "Engenharia_PY/05.+SQL+Server/05. SQL Server/Origem/Origem/arquivos_excel/Consolidar/Concat/VendasConcat.xlsx",
+    "Engenharia_PY/07.+Google+BigQuery/07. Google BigQuery/Arquivos/Origem/arquivos_excel/Consolidar/Concat/VendasConcat.xlsx",
+    "Engenharia_PY/Outros+Arquivos/Outros Arquivos/Concat/VendasConcat.xlsx"
+  ],
+  "9436e0c7308487b8d2ac983f4d56f12c361df8000b138401cd8a0d45c3fe67ad": [
+    "Engenharia_PY/Python+-+SGBDS/01. Postgree/3.Referencias/Ambiente Virtual.py",
+    "Engenharia_PY/Python+-+SGBDS/02. MySQL/2. Referencias/Ambiente Virtual.py"
+  ],
+  "28a9435255e06df0d7a7f147ec796e670b8e6b7449c8aec9aac76d27a32bb093": [
+    "Scripts_SQL/curso_sql-main/der.mwb",
+    "Scripts_SQL/Dicas/der.mwb"
+  ],
+  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855": [
+    "Scripts_SQL/sql-2025-main/schema.drawio",
+    "DataScience_UD/Iteracao/Arquivo01.docx",
+    "DataScience_UD/Iteracao/Arquivo02.xlsx",
+    "DataScience_UD/Iteracao/Arquivo03.pptx",
+    "DataScience_UD/Iteracao/Avaliacoes.csv",
+    "DataScience_UD/Iteracao/Diretoria.csv",
+    "DataScience_UD/Iteracao/Faturamento.csv",
+    "DataScience_UD/Iteracao/Funcionarios.csv",
+    "DataScience_UD/Iteracao/Recursos Humanos.csv",
+    "DataScience_UD/Iteracao/Vendedores.csv"
+  ],
+  "af8f7da7798bc6afa057dcb58da2acd489889db1316b23cf43046110e91f1bc7": [
+    "DataScience_UD/Datasets/Fixed-Width.txt",
+    "DataScience_UD/Datasets/LarguraFixa.txt"
+  ]
+}
