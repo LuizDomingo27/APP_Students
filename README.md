@@ -11,6 +11,14 @@ conteúdos — atrás de login, com cadastro aprovado por um administrador.
 > novo entra pela página **Adicionar** do app (ou, para lotes grandes em
 > pastas, pelo `scripts/indexar.py`).
 
+O app também é operável **por voz**: a barra do assistente aceita comandos
+falados ("ir para o dashboard", "buscar regressão linear", "modo código",
+"próxima página", "abrir o segundo resultado") e faz o que o clique faria. Os
+mesmos comandos funcionam digitados, então nada depende de ter microfone. O
+reconhecimento roda no navegador (Web Speech API, pt-BR): nenhum áudio sai da
+máquina e não há chave de API envolvida — em compensação, só Chrome e Edge
+reconhecem fala; nos demais, o campo de texto continua valendo.
+
 ## Stack
 
 | Camada        | Tecnologia                                              |
@@ -96,12 +104,15 @@ acervo/                  # pacote de domínio — NADA de Streamlit aqui
     senhas.py            # Argon2id, validação e senha temporária (funções puras)
     auth_service.py      # cadastrar / autenticar / alterar_senha
     admin_service.py     # aprovar, bloquear, papel, reset — permissão decidida aqui
+  voz/
+    comandos.py          # frase em português -> Comando (gramática pura, vocabulário fechado)
 
 app/                     # interface Streamlit — SÓ apresentação
   streamlit_app.py       # entrada: portão de acesso + navbar + roteamento
   sessao.py              # quem está logado nesta aba (session_state, só em memória)
   tema.py                # paleta e CSS injetado (única fonte de cores)
   componentes.py         # cards, chips, paginação (helpers puros são testados)
+  voz.py                 # assistente de voz: ouve no navegador, executa no session_state
   paginas/               # busca.py, dashboard.py, adicionar.py,
                          # login.py, trocar_senha.py, usuarios.py
 

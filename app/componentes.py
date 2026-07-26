@@ -18,6 +18,13 @@ MAX_LINHAS_PREVIA_CODIGO = 12
 PAGINAS_ABERTAS = ("Busca", "Dashboard", "Adicionar")
 PAGINA_ADMIN = "Usuários"
 
+# Os rótulos "sem filtro" dos dropdowns da busca. Ficam aqui porque não são só
+# da página de busca: o assistente de voz (`app.voz`) precisa escrever
+# exatamente estes valores no `session_state` para limpar um filtro — um
+# selectbox recusa qualquer valor que não esteja entre suas opções.
+FILTRO_TODAS = "Todas"
+FILTRO_TODO_CONTEUDO = "Todo o conteúdo"
+
 
 # ---------------------------------------------------------------- helpers puros
 

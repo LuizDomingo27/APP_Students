@@ -248,6 +248,70 @@ button[kind="segmented_controlActive"] {{
 
 [data-testid="stCode"] {{ border: 1px solid {BORDA_INPUT}; border-radius: 10px; }}
 
+/* ---------- assistente de voz ---------- */
+/* O botão do microfone é criado por JS na página principal (ver `app.voz`) e
+   encaixado no slot que o Streamlit desenha — por isso ele é estilizado aqui
+   por classe, e não pelo seletor de .stButton. */
+div[class*="st-key-voz_painel"] {{
+    background: rgba(21, 16, 33, 0.55);
+    border: 1px solid {BORDA};
+    border-radius: 14px;
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 0.9rem;
+}}
+/* o iframe da ponte é só instalador de script — não ocupa espaço na tela */
+div[class*="st-key-voz_painel"] iframe {{ display: none; }}
+
+.voz-slot {{ display: flex; align-items: center; gap: 0.5rem; min-height: 38px; }}
+
+.voz-botao {{
+    background: linear-gradient(180deg, {ROXO_PROFUNDO} 0%, {ROXO_DARK} 100%);
+    border: 1px solid {ROXO_PROFUNDO};
+    border-radius: 9px;
+    color: #f5f1ff;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 0.42rem 0.85rem;
+    transition: filter 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+}}
+.voz-botao:hover:enabled {{ filter: brightness(1.12); box-shadow: 0 0 16px rgba(124, 58, 237, 0.35); }}
+.voz-botao:disabled {{ background: transparent; border-color: {BORDA}; color: {TEXTO_SUAVE}; cursor: not-allowed; }}
+
+/* enquanto ouve, o botão pulsa: é o único aviso de que o microfone está
+   aberto para quem não olha a barra de status do navegador */
+.voz-botao.ouvindo {{
+    background: linear-gradient(180deg, #b91c5c 0%, #831843 100%);
+    border-color: {ROSA};
+    animation: voz-pulso 1.5s ease-in-out infinite;
+}}
+@keyframes voz-pulso {{
+    0%, 100% {{ box-shadow: 0 0 0 0 rgba(240, 166, 206, 0.45); }}
+    50%      {{ box-shadow: 0 0 0 7px rgba(240, 166, 206, 0); }}
+}}
+
+.voz-status {{ color: {TEXTO_SUAVE}; font-size: 0.72rem; line-height: 1.1; }}
+
+.voz-badge {{
+    border-radius: 8px;
+    font-size: 0.78rem;
+    margin-top: 0.5rem;
+    padding: 0.34rem 0.7rem;
+}}
+.voz-badge.voz-ok {{ background: rgba(110, 231, 183, 0.10); border: 1px solid {VERDE}55; color: {VERDE}; }}
+.voz-badge.voz-aviso {{ background: rgba(252, 211, 77, 0.10); border: 1px solid {AMBAR}55; color: {AMBAR}; }}
+.voz-badge.voz-erro {{ background: rgba(240, 166, 206, 0.10); border: 1px solid {ROSA}55; color: {ROSA}; }}
+
+.voz-exemplo {{
+    color: {TEXTO_SUAVE};
+    font-size: 0.78rem;
+    padding: 0.12rem 0 0.12rem 0.6rem;
+    border-left: 2px solid {BORDA};
+    margin-bottom: 0.15rem;
+}}
+
 /* ---------- diálogo (arquivo completo) ---------- */
 div[role="dialog"] {{
     background: #14101f;

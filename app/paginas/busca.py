@@ -12,11 +12,12 @@ from acervo.core.exceptions import BuscaError
 from acervo.search import busca_service
 from acervo.search.estatisticas_service import resumo_do_acervo
 from app import componentes as comp
+from app import voz
 
 _MODOS = {"Texto": "texto", "Código": "codigo"}
 _RESULTADOS_POR_PAGINA = 10
-_TODAS = "Todas"
-_TODO_CONTEUDO = "Todo o conteúdo"
+_TODAS = comp.FILTRO_TODAS
+_TODO_CONTEUDO = comp.FILTRO_TODO_CONTEUDO
 _BLOCOS_NO_SUMARIO = 25
 
 _SUGESTOES = (
@@ -210,6 +211,8 @@ def render() -> None:
     arquivo_caminho = rotulos_conteudo.get(conteudo_rotulo)
 
     if not termo.strip():
+        st.session_state[voz.TOTAL_PAGINAS] = 0
+        voz.descartar_abertura("Faça uma busca antes de mandar abrir um resultado.")
         if arquivo_caminho:
             _sumario(arquivo_caminho)
         else:
@@ -233,6 +236,11 @@ def render() -> None:
         st.error(str(e))
         return
 
+    # a paginação por voz precisa saber onde é a última página; a busca é a
+    # única que sabe, então publica no estado (ver `app.voz.nova_pagina`)
+    paginas = comp.total_de_paginas(pagina.total, _RESULTADOS_POR_PAGINA)
+    st.session_state[voz.TOTAL_PAGINAS] = paginas
+
     st.write("")
     if pagina.total == 0:
         dica = (
@@ -243,6 +251,7 @@ def render() -> None:
         if arquivo_caminho:
             dica += f" Ou volte o filtro para **{_TODO_CONTEUDO}** e busque na categoria inteira."
         st.info(f"Nenhum resultado para **{termo}**. {dica}")
+        voz.descartar_abertura("Esta busca não trouxe resultados para abrir.")
         return
 
     st.markdown(
@@ -252,8 +261,9 @@ def render() -> None:
     for resultado in pagina.resultados:
         comp.card_resultado(resultado, cores, ao_abrir=_abrir_arquivo)
 
-    comp.controles_de_paginacao(
-        pagina_atual,
-        comp.total_de_paginas(pagina.total, _RESULTADOS_POR_PAGINA),
-        chave_estado="pagina_busca",
-    )
+    comp.controles_de_paginacao(pagina_atual, paginas, chave_estado="pagina_busca")
+
+    # "abrir o segundo resultado" — só aqui existe a lista para contar
+    indice = voz.indice_para_abrir(len(pagina.resultados))
+    if indice is not None:
+        _abrir_arquivo(pagina.resultados[indice].arquivo_caminho)

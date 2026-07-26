@@ -168,6 +168,23 @@ que ele decide é outra.
   `resetar_senha` devolve `(usuario, senha_em_claro)`. A senha em claro só
   existe nesse retorno; o banco guarda o hash e liga `senha_temporaria`.
 
+### `acervo/voz` — gramática do assistente de voz
+
+`comandos.py` traduz uma frase em português para um `Comando(acao, valor,
+descricao)`. É uma camada pura: não conhece Streamlit, microfone nem banco —
+recebe texto e devolve *o que fazer*.
+
+O vocabulário é **fechado**: frase que não casa com nenhuma regra vira `None`,
+e a interface responde "não entendi". Chutar a ação mais provável seria pior
+que não fazer nada, porque quem depende de voz não tem como desfazer rápido.
+Pela mesma razão, encerrar sessão exige frase inteira ("encerrar sessão"), não
+a palavra "sair" — que aparece em qualquer conversa perto do microfone.
+
+`escolher_opcao()` casa o que foi dito com uma opção que existe de verdade
+("databriks" → "Databricks · Módulo 1"), numa escada que vai do exato ao
+aproximado. Ela é necessária porque escrever no `session_state` um valor fora
+da lista de um `selectbox` derruba a página inteira.
+
 ## Interface (`app/`)
 
 ### O portão de acesso
@@ -231,6 +248,46 @@ contra ataque automatizado (o que segura força bruta é o custo do Argon2).
   temporária de um reset aparece **uma vez**, sobrevive ao rerun via
   `session_state` e some no F5. Ações sobre a própria conta não são
   desenhadas: são exatamente as que o serviço barra.
+
+### `app/voz.py` — o assistente executa escrevendo estado, não clicando
+
+O assistente **não simula clique**. Em Streamlit o botão não existe entre um
+rerun e outro: ele é redesenhado a cada execução do script, e o que faz de
+verdade é escrever no `session_state`. Então `app/voz.py` pula a intermediação
+e escreve o estado direto — o efeito na tela é idêntico ao do clique, e não
+depende de achar um elemento no DOM.
+
+Isso amarra uma regra de ordem em `streamlit_app.py`:
+`voz.processar_pendente()` roda **antes** da navbar e das páginas. Depois que
+um widget é instanciado, escrever na chave dele já não muda a tela desta
+rodada.
+
+O caminho de uma frase:
+
+```
+microfone (Web Speech API, no navegador)
+  → controlador JS injetado na página principal
+  → campo de texto do Streamlit  ──── (também aceita digitação)
+  → callback guarda em `voz_pendente`
+  → rerun → processar_pendente() interpreta e executa
+```
+
+Dois detalhes que parecem gambiarra e não são:
+
+- **O controlador vive na página, não no iframe.** `st.iframe` cria um iframe
+  novo a cada rerun; um reconhecimento de fala que morasse lá dentro morreria
+  a cada comando executado. O iframe é só um instalador — nas vezes seguintes
+  apenas reencaixa o botão no lugar que o Streamlit acabou de redesenhar.
+- **O campo de texto no meio do caminho** é a única via de um script do
+  navegador devolver texto ao Python sem construir um componente React com
+  build próprio. Ele é também a interface de reserva: os mesmos comandos
+  funcionam digitados, o que mantém o assistente utilizável em navegador sem
+  reconhecimento de fala (Firefox) e testável sem microfone.
+
+O contrato com as páginas é pequeno e está todo declarado no topo de
+`app/voz.py`: as chaves de widget que o assistente pilota. Se uma página
+renomear a sua, o assistente para de funcionar em silêncio — essa lista é o
+primeiro lugar onde procurar.
 
 ## Decisões de projeto (o porquê)
 

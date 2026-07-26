@@ -26,7 +26,7 @@ import streamlit as st  # noqa: E402
 
 from acervo.core.exceptions import AcervoError, ConfiguracaoError  # noqa: E402
 from acervo.core.models import Usuario  # noqa: E402
-from app import componentes, sessao  # noqa: E402
+from app import componentes, sessao, voz  # noqa: E402
 from app.paginas import (  # noqa: E402
     adicionar, busca, dashboard, login, trocar_senha, usuarios,
 )
@@ -80,10 +80,13 @@ def _navbar(usuario: Usuario) -> str:
         )
         
         with col_nav:
+            # a página inicial é semeada no estado em vez de vir por `default=`:
+            # o assistente de voz também escreve nesta chave, e o Streamlit
+            # reclama quando um widget tem default *e* valor no session_state
+            st.session_state.setdefault("nav_paginas", "Busca")
             pagina = st.segmented_control(
                 "Navegação",
                 componentes.opcoes_de_navegacao(sessao.eh_admin()),
-                default="Busca",
                 key="nav_paginas",
                 label_visibility="collapsed",
                 on_change=_fechar_conta,
@@ -117,7 +120,13 @@ def main() -> None:
         trocar_senha.render(obrigatoria=True)
         return
 
+    # Antes da navbar e das páginas, sem exceção: o assistente age escrevendo
+    # nas chaves dos widgets, e um widget já instanciado ignora a escrita até
+    # o próximo run. Ver a nota de ordem no topo de `app.voz`.
+    voz.processar_pendente(eh_admin=sessao.eh_admin())
+
     pagina = _navbar(usuario)
+    voz.painel()
 
     try:
         _pagina(pagina)
