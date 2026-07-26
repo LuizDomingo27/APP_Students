@@ -1,11 +1,20 @@
-"""Fase 3 — interface web do Acervo DS.
+"""Fase 3/4 — interface web do Acervo DS.
 
 Uso:
     streamlit run app/streamlit_app.py
 
-Navbar própria (marca + navegação) e duas páginas: Busca e Dashboard.
-Toda a lógica de dados vive em acervo.search.* — aqui é só apresentação.
+Este arquivo é o porteiro: decide *qual* tela aparece. São três estados, e
+eles são exclusivos — quem cai num não vê nada dos outros:
+
+    sem sessão              -> login
+    senha temporária        -> troca de senha obrigatória
+    logado                  -> navbar + páginas
+
+O segundo estado existe porque a senha gerada por um admin circulou por fora
+do sistema (foi ditada, colada numa mensagem); enquanto ela valer, a pessoa
+não navega. Toda a lógica de dados vive em acervo.* — aqui é só apresentação.
 """
+import html
 import sys
 from pathlib import Path
 
@@ -16,7 +25,11 @@ if str(_RAIZ) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from acervo.core.exceptions import AcervoError, ConfiguracaoError  # noqa: E402
-from app.paginas import adicionar, busca, dashboard  # noqa: E402
+from acervo.core.models import Usuario  # noqa: E402
+from app import componentes, sessao  # noqa: E402
+from app.paginas import (  # noqa: E402
+    adicionar, busca, dashboard, login, trocar_senha, usuarios,
+)
 from app.tema import aplicar_tema  # noqa: E402
 
 st.set_page_config(
@@ -27,10 +40,37 @@ st.set_page_config(
 )
 aplicar_tema()
 
+# A troca de senha voluntária não é um item da navbar: entra pelo menu da
+# conta e sai sozinha assim que a pessoa clica em qualquer página.
+_CONTA = "mostrar_conta"
 
-def main() -> None:
+
+def _fechar_conta() -> None:
+    st.session_state[_CONTA] = False
+
+
+def _menu_da_conta(usuario: Usuario) -> None:
+    with st.popover(componentes.primeiro_nome(usuario.nome), width="stretch"):
+        # HTML em vez de st.caption porque o Markdown do Streamlit transforma
+        # e-mail em link `mailto:` — aqui ele é só identificação da conta.
+        st.markdown(
+            f'<p class="conta-email">{html.escape(usuario.email)}</p>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Trocar senha", key="btn_trocar_senha", width="stretch"):
+            st.session_state[_CONTA] = True
+            st.rerun()
+        if st.button("Sair", key="btn_sair", width="stretch"):
+            sessao.encerrar_sessao()
+            st.rerun()
+
+
+def _navbar(usuario: Usuario) -> str:
+    """Desenha a barra do topo e devolve a página escolhida."""
     with st.container(key="navbar"):
-        col_marca, col_nav = st.columns([1.1, 1.3], vertical_alignment="center")
+        col_marca, col_nav, col_conta = st.columns(
+            [1.0, 1.5, 0.5], vertical_alignment="center",
+        )
         col_marca.markdown(
             '<div class="marca"><span class="marca-ponto"></span>'
             'Acervo&nbsp;<span class="grad">DS</span></div>',
@@ -38,17 +78,46 @@ def main() -> None:
         )
         with col_nav:
             pagina = st.segmented_control(
-                "Navegação", ["Busca", "Dashboard", "Adicionar"], default="Busca",
-                key="nav_paginas", label_visibility="collapsed",
+                "Navegação",
+                componentes.opcoes_de_navegacao(sessao.eh_admin()),
+                default="Busca",
+                key="nav_paginas",
+                label_visibility="collapsed",
+                on_change=_fechar_conta,
             ) or "Busca"
+        with col_conta:
+            _menu_da_conta(usuario)
+
+    return pagina
+
+
+def _pagina(nome: str) -> None:
+    if st.session_state.get(_CONTA):
+        trocar_senha.render()
+    elif nome == "Dashboard":
+        dashboard.render()
+    elif nome == "Adicionar":
+        adicionar.render()
+    elif nome == componentes.PAGINA_ADMIN:
+        usuarios.render()
+    else:
+        busca.render()
+
+
+def main() -> None:
+    usuario = sessao.usuario_atual()
+    if usuario is None:
+        login.render()
+        return
+
+    if sessao.precisa_trocar_senha():
+        trocar_senha.render(obrigatoria=True)
+        return
+
+    pagina = _navbar(usuario)
 
     try:
-        if pagina == "Dashboard":
-            dashboard.render()
-        elif pagina == "Adicionar":
-            adicionar.render()
-        else:
-            busca.render()
+        _pagina(pagina)
     except ConfiguracaoError as e:
         st.error(
             f"**Configuração incompleta.** {e}\n\n"

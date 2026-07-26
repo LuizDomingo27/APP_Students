@@ -5,7 +5,34 @@ e o que a busca devolve, independente de como os dados chegaram lá (Postgres,
 arquivo, ou o que vier a substituir isso no futuro).
 """
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
+
+
+@dataclass(frozen=True)
+class Usuario:
+    """Uma pessoa com cadastro no acervo.
+
+    O hash da senha **não** está aqui de propósito: ele só trafega entre o
+    repositório e o serviço de autenticação. Assim nenhum objeto que chega à
+    interface (ou a um log, ou a um `st.session_state`) carrega credencial.
+    """
+    id: Optional[int]
+    nome: str
+    email: str
+    papel: str      # 'usuario' | 'admin'
+    status: str     # 'pendente' | 'aprovado' | 'recusado' | 'bloqueado'
+    senha_temporaria: bool = False
+    criado_em: Optional[datetime] = None
+    ultimo_acesso: Optional[datetime] = None
+
+    @property
+    def eh_admin(self) -> bool:
+        return self.papel == "admin"
+
+    @property
+    def tem_acesso(self) -> bool:
+        return self.status == "aprovado"
 
 
 @dataclass(frozen=True)

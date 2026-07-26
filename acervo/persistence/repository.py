@@ -21,6 +21,7 @@ from acervo.core.models import (
     EstatisticaCategoria,
     ResultadoBusca,
     ResumoAcervo,
+    Usuario,
 )
 
 
@@ -319,3 +320,148 @@ class FalhaRepository:
             f'VALUES (%s, %s, %s)',
             (arquivo_caminho, etapa, erro),
         )
+
+
+class UsuarioRepository:
+    """Contas de acesso (Fase 4).
+
+    O `senha_hash` sai daqui em um único método (`buscar_por_email`, usado só
+    pelo login) e sempre separado do `Usuario` — o modelo de domínio não
+    carrega credencial, então nada que a interface receba pode vazá-la.
+    """
+
+    # Ordem idêntica aos campos de `Usuario`, o que permite montar o modelo
+    # com `Usuario(*linha)` sem repetir nome de coluna em cada consulta.
+    _COLUNAS = "id, nome, email, papel, status, senha_temporaria, criado_em, ultimo_acesso"
+
+    def __init__(self, schema: str = "acervo"):
+        self.schema = schema
+
+    def criar(
+        self,
+        cur,
+        nome: str,
+        email: str,
+        senha_hash: str,
+        *,
+        papel: str = "usuario",
+        status: str = "pendente",
+    ) -> Optional[Usuario]:
+        """Cria a conta, ou devolve None se o e-mail já estiver em uso.
+
+        O `ON CONFLICT DO NOTHING` resolve a corrida entre dois cadastros
+        simultâneos com o mesmo e-mail sem depender de uma checagem prévia.
+        Também é a única forma prática de detectar a colisão: `db.cursor()`
+        converte qualquer `psycopg.Error` em `ConexaoBancoError`, então uma
+        violação de UNIQUE chegaria ao serviço disfarçada de falha de rede.
+        """
+        cur.execute(
+            f'INSERT INTO "{self.schema}".usuarios (nome, email, senha_hash, papel, status) '
+            f'VALUES (%s, %s, %s, %s, %s) '
+            f'ON CONFLICT (email) DO NOTHING '
+            f'RETURNING {self._COLUNAS}',
+            (nome, email, senha_hash, papel, status),
+        )
+        linha = cur.fetchone()
+        return Usuario(*linha) if linha else None
+
+    def buscar_por_email(self, cur, email: str) -> Optional[tuple[Usuario, str]]:
+        """(usuário, hash da senha) — o par que o login precisa conferir."""
+        cur.execute(
+            f'SELECT {self._COLUNAS}, senha_hash FROM "{self.schema}".usuarios '
+            f'WHERE email = %s',
+            (email,),
+        )
+        linha = cur.fetchone()
+        if linha is None:
+            return None
+        return Usuario(*linha[:-1]), linha[-1]
+
+    def buscar_por_id(self, cur, usuario_id: int) -> Optional[Usuario]:
+        cur.execute(
+            f'SELECT {self._COLUNAS} FROM "{self.schema}".usuarios WHERE id = %s',
+            (usuario_id,),
+        )
+        linha = cur.fetchone()
+        return Usuario(*linha) if linha else None
+
+    def listar(self, cur, status: Optional[str] = None) -> tuple[Usuario, ...]:
+        """Todos os usuários, ou só os de um status.
+
+        A ordem serve ao painel do admin: pendentes no topo (é o que exige
+        ação), depois ativos, depois os sem acesso; dentro de cada grupo, o
+        cadastro mais recente primeiro.
+        """
+        sql = f'SELECT {self._COLUNAS} FROM "{self.schema}".usuarios '
+        parametros: tuple = ()
+        if status is not None:
+            sql += "WHERE status = %s "
+            parametros = (status,)
+        sql += (
+            "ORDER BY CASE status "
+            "WHEN 'pendente' THEN 0 WHEN 'aprovado' THEN 1 "
+            "WHEN 'bloqueado' THEN 2 ELSE 3 END, criado_em DESC, id DESC"
+        )
+        cur.execute(sql, parametros)
+        return tuple(Usuario(*linha) for linha in cur.fetchall())
+
+    def contar_por_status(self, cur) -> dict[str, int]:
+        """{status: quantidade} — alimenta o badge de pendentes na navegação."""
+        cur.execute(
+            f'SELECT status, count(*) FROM "{self.schema}".usuarios GROUP BY status'
+        )
+        return {status: total for status, total in cur.fetchall()}
+
+    def atualizar_status(
+        self, cur, usuario_id: int, status: str, *, decidido_por: Optional[int],
+    ) -> bool:
+        """Muda o status e carimba quem decidiu. False se o id não existe."""
+        cur.execute(
+            f'UPDATE "{self.schema}".usuarios '
+            f'SET status = %s, decidido_em = now(), decidido_por = %s WHERE id = %s',
+            (status, decidido_por, usuario_id),
+        )
+        return cur.rowcount > 0
+
+    def atualizar_papel(self, cur, usuario_id: int, papel: str) -> bool:
+        cur.execute(
+            f'UPDATE "{self.schema}".usuarios SET papel = %s WHERE id = %s',
+            (papel, usuario_id),
+        )
+        return cur.rowcount > 0
+
+    def atualizar_senha(
+        self, cur, usuario_id: int, senha_hash: str, *, temporaria: bool = False,
+    ) -> bool:
+        """Grava um hash novo. `temporaria=True` obriga a troca no próximo login."""
+        cur.execute(
+            f'UPDATE "{self.schema}".usuarios '
+            f'SET senha_hash = %s, senha_temporaria = %s WHERE id = %s',
+            (senha_hash, temporaria, usuario_id),
+        )
+        return cur.rowcount > 0
+
+    def registrar_acesso(self, cur, usuario_id: int) -> None:
+        cur.execute(
+            f'UPDATE "{self.schema}".usuarios SET ultimo_acesso = now() WHERE id = %s',
+            (usuario_id,),
+        )
+
+    def contar_admins_ativos(self, cur, *, exceto: Optional[int] = None) -> int:
+        """Admins aprovados, opcionalmente ignorando um id.
+
+        É o que permite ao serviço recusar a última ação que deixaria o
+        sistema sem ninguém capaz de aprovar cadastros. `IS DISTINCT FROM`
+        trata o NULL de `exceto=None` como "não ignore ninguém".
+        """
+        cur.execute(
+            f"SELECT count(*) FROM \"{self.schema}\".usuarios "
+            f"WHERE papel = 'admin' AND status = 'aprovado' AND id IS DISTINCT FROM %s",
+            (exceto,),
+        )
+        return cur.fetchone()[0]
+
+    def existe_algum(self, cur) -> bool:
+        """True se já há qualquer conta — usado pelo script do primeiro admin."""
+        cur.execute(f'SELECT 1 FROM "{self.schema}".usuarios LIMIT 1')
+        return cur.fetchone() is not None

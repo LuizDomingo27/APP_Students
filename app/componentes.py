@@ -5,6 +5,7 @@ páginas) são puras de propósito — são elas que os testes unitários cobrem
 sem precisar subir o Streamlit.
 """
 import html
+from datetime import datetime
 from typing import Callable, Optional, Sequence
 
 import streamlit as st
@@ -14,8 +15,34 @@ from app import tema
 
 MAX_LINHAS_PREVIA_CODIGO = 12
 
+PAGINAS_ABERTAS = ("Busca", "Dashboard", "Adicionar")
+PAGINA_ADMIN = "Usuários"
+
 
 # ---------------------------------------------------------------- helpers puros
+
+def opcoes_de_navegacao(eh_admin: bool) -> list[str]:
+    """Os itens que a navbar mostra para quem está logado.
+
+    Esconder "Usuários" de quem não é admin é conveniência visual, não
+    segurança: a sessão é uma fotografia do login (ver `app.sessao`) e pode
+    estar velha. Quem barra a ação de fato é `acervo.auth.admin_service`,
+    que relê o papel no banco a cada operação.
+    """
+    if eh_admin:
+        return [*PAGINAS_ABERTAS, PAGINA_ADMIN]
+    return list(PAGINAS_ABERTAS)
+
+
+def primeiro_nome(nome: str) -> str:
+    """'Ana Silva Souza' -> 'Ana' — o botão da conta na navbar é estreito."""
+    partes = nome.split()
+    return partes[0] if partes else nome
+
+
+def formatar_data(quando: Optional[datetime]) -> str:
+    """Data curta no padrão brasileiro; '—' quando nunca aconteceu."""
+    return quando.strftime("%d/%m/%Y") if quando else "—"
 
 def resumir(texto: str, maximo: int = 240) -> str:
     """Uma linha só, cortada com reticências — para a prévia do card."""

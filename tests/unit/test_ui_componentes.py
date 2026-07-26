@@ -1,10 +1,17 @@
 """Testes dos helpers puros da UI (app/componentes.py) — sem subir Streamlit."""
+from datetime import datetime
+
 from acervo.core.models import Bloco, ConteudoCategoria
 from app.componentes import (
+    PAGINA_ADMIN,
+    PAGINAS_ABERTAS,
     cartao_metrica_html,
     chip_html,
+    formatar_data,
     formatar_numero,
+    opcoes_de_navegacao,
     previa_de_codigo,
+    primeiro_nome,
     resumir,
     rotulo_categoria,
     rotulo_conteudo,
@@ -130,3 +137,25 @@ def test_cartao_metrica_formata_valor():
     assert "6.595" in html_cartao
     assert "Blocos" in html_cartao
     assert "--cor-metrica:#7dd3fc" in html_cartao
+
+
+def test_navegacao_esconde_usuarios_de_quem_nao_e_admin():
+    assert opcoes_de_navegacao(False) == list(PAGINAS_ABERTAS)
+    assert PAGINA_ADMIN not in opcoes_de_navegacao(False)
+
+
+def test_navegacao_do_admin_acrescenta_usuarios_no_fim():
+    opcoes = opcoes_de_navegacao(True)
+    assert opcoes[: len(PAGINAS_ABERTAS)] == list(PAGINAS_ABERTAS)
+    assert opcoes[-1] == PAGINA_ADMIN
+
+
+def test_formatar_data():
+    assert formatar_data(datetime(2026, 3, 9, 14, 30)) == "09/03/2026"
+    assert formatar_data(None) == "—"
+
+
+def test_primeiro_nome():
+    assert primeiro_nome("Ana Silva Souza") == "Ana"
+    assert primeiro_nome("Ana") == "Ana"
+    assert primeiro_nome("  ") == "  "

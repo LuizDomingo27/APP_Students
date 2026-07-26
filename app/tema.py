@@ -69,6 +69,40 @@ div[class*="st-key-navbar"] {{
 }}
 div[class*="st-key-nav_paginas"] {{ display: flex; justify-content: flex-end; }}
 
+/* menu da conta — encostado na direita, discreto ao lado da navegação */
+div[class*="st-key-navbar"] [data-testid="stPopover"] {{ display: flex; justify-content: flex-end; }}
+div[class*="st-key-navbar"] [data-testid="stPopover"] button {{
+    background: rgba(167, 139, 250, 0.10);
+    border: 1px solid {BORDA};
+    color: {TEXTO};
+}}
+div[class*="st-key-navbar"] [data-testid="stPopover"] button:hover:enabled {{
+    background: rgba(167, 139, 250, 0.18);
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: none;
+    color: {TEXTO};
+    filter: none;
+}}
+/* o painel do popover é renderizado fora da navbar, no fim do body */
+[data-testid="stPopoverBody"] {{ min-width: 210px; }}
+.conta-email {{
+    color: {TEXTO_SUAVE}; font-size: 0.8rem;
+    margin: 0 0 0.7rem 0; overflow-wrap: anywhere;
+}}
+
+/* ---------- cartão de acesso (login, cadastro, troca de senha) ---------- */
+div[class*="st-key-cartao_acesso"] {{
+    background: linear-gradient(180deg, {FUNDO_CARD} 0%, #120e1d 100%);
+    border: 1px solid {BORDA};
+    border-radius: 16px;
+    padding: 1.8rem 1.9rem 1.4rem;
+    margin-top: 3.2rem;
+    box-shadow: 0 12px 44px rgba(0, 0, 0, 0.4);
+}}
+.acesso-cabecalho {{ text-align: center; margin-bottom: 1.4rem; }}
+.acesso-cabecalho .marca {{ justify-content: center; font-size: 1.5rem; }}
+.acesso-cabecalho p {{ color: {TEXTO_SUAVE}; font-size: 0.9rem; margin: 0.45rem 0 0 0; }}
+
 /* ---------- hero (estado inicial da busca) ---------- */
 .hero {{ text-align: center; padding: 2.4rem 0 0.8rem 0; }}
 .hero h1 {{
@@ -187,6 +221,22 @@ div[class*="st-key-card_"]:hover {{
 }}
 .stButton button:active:enabled, .stDownloadButton button:active:enabled,
 .stFormSubmitButton button:active:enabled {{ transform: translateY(1px); }}
+
+/* No painel de usuários, tudo roxo faria "Recusar" e "Bloquear" terem o mesmo
+   peso visual de "Aprovar" — e um clique errado ali tira o acesso de alguém.
+   As ações que retiram acesso ficam contornadas, discretas. */
+div[class*="st-key-card_usuario_"] .stButton button[kind="secondary"] {{
+    background: transparent;
+    border: 1px solid {BORDA_INPUT};
+    color: {TEXTO_SUAVE};
+}}
+div[class*="st-key-card_usuario_"] .stButton button[kind="secondary"]:hover:enabled {{
+    background: rgba(167, 139, 250, 0.10);
+    border-color: {ROXO};
+    box-shadow: none;
+    color: {TEXTO};
+    filter: none;
+}}
 
 /* segmented control (navegação) segue o mesmo roxo */
 button[kind="segmented_control"] {{ border-color: {BORDA_INPUT}; }}

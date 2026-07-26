@@ -18,8 +18,9 @@ transação**: ou aplica o conjunto pendente inteiro, ou nada.
 | `0001_init.sql`            | Tabelas, índices e extensão `pg_trgm`.                                |
 | `0002_busca_sem_acento.sql`| Extensão `unaccent` + text search config `portugues_unaccent`; recria `blocos.texto_busca` com ela. |
 | `0003_origem_arquivo.sql`  | Coluna `arquivos.origem` ('varredura' \| 'upload') — base da limpeza de órfãos. |
+| `0004_usuarios.sql`        | Tabela `usuarios` + índice por status — o acervo deixa de ser aberto. |
 
-Para criar uma migração nova: adicione `0004_descricao.sql` usando
+Para criar uma migração nova: adicione `0005_descricao.sql` usando
 `"{schema}"` em todo identificador, e rode `python scripts/aplicar_migrations.py`.
 Nunca edite uma migração já aplicada — crie a próxima.
 
@@ -90,6 +91,41 @@ mostra o total).
 | erro            | mensagem da causa                                      |
 | ocorrido_em     | timestamp                                              |
 
+### `usuarios`
+
+Quem pode entrar no acervo. Cadastro é auto-serviço, mas nasce `pendente` e
+não abre porta nenhuma até um admin decidir.
+
+| Coluna           | Tipo      | Notas                                                     |
+|------------------|-----------|-----------------------------------------------------------|
+| id               | SERIAL PK |                                                           |
+| nome             | TEXT      | como a pessoa se identificou no cadastro                  |
+| email            | TEXT **UNIQUE** | sempre gravado em minúsculas pela camada de serviço — o UNIQUE do Postgres é sensível a maiúsculas, então sem a normalização "Ana@x.com" e "ana@x.com" virariam duas contas. |
+| senha_hash       | TEXT      | Argon2id. **Nunca sai do par repositório↔`acervo.auth`**: o dataclass `Usuario` não tem esse campo, então nenhum objeto que chega à UI, a um log ou ao `session_state` carrega credencial. |
+| papel            | TEXT      | CHECK: 'usuario' \| 'admin'. DEFAULT 'usuario'            |
+| status           | TEXT      | CHECK: 'pendente' \| 'aprovado' \| 'recusado' \| 'bloqueado'. DEFAULT 'pendente'. Só 'aprovado' entra no app. |
+| senha_temporaria | BOOLEAN   | ligado quando um admin reseta a senha; enquanto for TRUE a interface só mostra a tela de troca de senha. |
+| criado_em        | TIMESTAMPTZ | DEFAULT now()                                           |
+| decidido_em      | TIMESTAMPTZ? | quando a última decisão administrativa aconteceu       |
+| decidido_por     | INT? FK → usuarios | quem decidiu. Evita uma tabela de auditoria separada enquanto só interessa o estado corrente. |
+| ultimo_acesso    | TIMESTAMPTZ? | gravado a cada login bem-sucedido                       |
+
+Ciclo de vida do status:
+
+```
+pendente  -> aprovado | recusado      (decisão inicial do admin)
+aprovado <-> bloqueado                (revogar / devolver acesso)
+recusado  -> aprovado                 (admin muda de ideia)
+```
+
+**Nada é apagado.** Recusar e bloquear são status: manter a linha preserva o
+histórico da decisão e impede que a mesma pessoa volte para a fila de
+pendentes só recriando o cadastro com o mesmo e-mail. Não há `DELETE` de
+usuário em lugar nenhum do código.
+
+O índice `idx_usuarios_status` serve à consulta que o painel do admin faz a
+cada carga (a fila de pendentes).
+
 ## Índices e mecânica da busca
 
 | Índice                   | Tipo | Serve a                                              |
@@ -132,4 +168,16 @@ WHERE c.nome = 'Scripts SQL' ORDER BY a.caminho;
 
 -- remover um upload específico (blocos caem em cascata)
 DELETE FROM acervo.arquivos WHERE caminho = 'uploads/<pasta>/<arquivo>';
+
+-- quem está esperando aprovação
+SELECT nome, email, criado_em FROM acervo.usuarios
+WHERE status = 'pendente' ORDER BY criado_em;
+
+-- quem tem acesso hoje, e quem manda
+SELECT nome, email, papel, ultimo_acesso FROM acervo.usuarios
+WHERE status = 'aprovado' ORDER BY papel, nome;
 ```
+
+> Para mexer em usuário, prefira o painel **Usuários** do app ou o
+> `scripts/criar_admin.py`. SQL na mão pula as salvaguardas ("sempre resta um
+> admin", transições de status válidas) e não grava `decidido_por`.

@@ -7,7 +7,8 @@ O projeto é dividido em dois pacotes com uma regra rígida entre eles:
 - **`acervo/`** — o domínio: modelos, parsers, persistência e serviços.
   Não importa Streamlit em lugar nenhum. Tudo aqui é testável sem UI.
 - **`app/`** — a interface Streamlit: só apresentação. Toda lógica de dados
-  chega através dos serviços de `acervo/search/`.
+  chega através dos serviços de `acervo/search/`, e toda decisão de acesso
+  através de `acervo/auth/`.
 
 Os scripts de `scripts/` são CLIs finos: parseiam argumentos, chamam um
 serviço e imprimem o resultado.
@@ -17,7 +18,7 @@ UI (app/paginas/*)         CLI (scripts/*)
         │                        │
         └──────────┬─────────────┘
                    ▼
-        serviços (acervo/search/*)      ← validação, orquestração, fronteira de erro
+   serviços (acervo/search/* e acervo/auth/*)  ← validação, orquestração, fronteira de erro
                    │
       ┌────────────┼────────────────┐
       ▼            ▼                ▼
@@ -46,7 +47,17 @@ UI (app/paginas/*)         CLI (scripts/*)
   - `ArquivoParseError` — arquivo ilegível; carrega `caminho`, `etapa` (nome
     do parser) e `causa` para o registro de falhas;
   - `BuscaError` — a única exceção que a UI de busca precisa conhecer;
-  - `UploadError` — idem para a página Adicionar.
+  - `UploadError` — idem para a página Adicionar;
+  - `CadastroError` — dados de cadastro/troca de senha recusados; a mensagem
+    é sempre segura para exibir (existe para dizer o que corrigir no formulário);
+  - `AutenticacaoError` — login recusado. **Cuidado ao mexer nas mensagens**:
+    elas vão para uma tela pública e não podem revelar se um e-mail existe;
+  - `PermissaoError` — ação administrativa não permitida.
+
+  `Usuario` (em `models.py`) segue a mesma regra dos outros dataclasses, com
+  uma omissão deliberada: **não tem o hash da senha**. Ele só trafega entre o
+  repositório e `acervo/auth`, então nenhum objeto que chega à interface (ou
+  a um log, ou ao `session_state`) carrega credencial.
 
 ### `acervo/ingestion` — extração de conteúdo
 
@@ -124,20 +135,81 @@ em memória.
 - **`estatisticas_service.resumo_do_acervo()`** — números agregados para o
   dashboard.
 
+### `acervo/auth` — quem entra (Fase 4)
+
+Mesmo formato dos serviços de busca (repositório injetável, exceções da
+hierarquia `AcervoError`), separado em pacote próprio porque a natureza do
+que ele decide é outra.
+
+- **`senhas.py`** — regras puras de credencial, sem I/O nenhum: hash e
+  verificação **Argon2id** (m=19 MiB, t=2, p=1 — o piso do OWASP; o padrão de
+  64 MiB da biblioteca triplicaria o pico de memória de cada login),
+  normalização de e-mail, força mínima de senha (`MIN_SENHA`) e geração da
+  senha temporária. Dois detalhes que existem por um motivo:
+  - `hash_dummy` — verificação falsa executada quando o e-mail não existe,
+    para que "e-mail inexistente" e "senha errada" custem o mesmo tempo;
+  - `precisa_rehash` — hashes antigos se atualizam sozinhos no próximo login
+    quando os parâmetros do Argon2 sobem, então endurecer os números depois
+    é seguro.
+- **`auth_service.py`** — `cadastrar`, `autenticar`, `alterar_senha`. Duas
+  regras atravessam o módulo: (1) a tela de login não pode virar oráculo de
+  e-mails cadastrados — o motivo real da recusa ("aguardando aprovação",
+  "bloqueado") só é revelado **depois** de a senha ser conferida como
+  correta; (2) o hash é lido, usado e descartado dentro da função.
+- **`admin_service.py`** — `listar_usuarios`, `aprovar`, `recusar`,
+  `bloquear`, `reativar`, `definir_papel`, `resetar_senha`. Toda função
+  recebe o `ator` e tem quatro salvaguardas:
+  1. **o poder do ator é reconferido no banco a cada ação** — a sessão da UI
+     é uma fotografia do login e não expira enquanto a aba estiver aberta;
+  2. **ninguém se derruba sozinho** (não dá para se bloquear nem se rebaixar);
+  3. **sempre resta um administrador ativo**;
+  4. **nada é apagado** — recusar e bloquear são status.
+
+  `resetar_senha` devolve `(usuario, senha_em_claro)`. A senha em claro só
+  existe nesse retorno; o banco guarda o hash e liga `senha_temporaria`.
+
 ## Interface (`app/`)
 
-- `streamlit_app.py`: `set_page_config` + tema + navbar própria
-  (`st.segmented_control`) que roteia para `busca`, `dashboard` ou
-  `adicionar`. Captura `ConfiguracaoError`/`AcervoError` e mostra erro
-  amigável.
+### O portão de acesso
+
+`streamlit_app.py` decide qual das três telas aparece, e elas são exclusivas:
+
+```
+sem sessão               -> paginas/login.py
+senha_temporaria = True  -> paginas/trocar_senha.py (obrigatoria=True)
+autenticado              -> navbar + páginas
+```
+
+O estado do meio existe porque a senha gerada por um admin circulou por fora
+do sistema (foi ditada, colada numa mensagem) e não pode virar a senha
+permanente de ninguém.
+
+`sessao.py` guarda quem está logado no `session_state`, **só em memória**:
+recarregar a página desloga, porque o Streamlit descarta o `session_state` a
+cada conexão nova. Foi escolha — manter login entre recargas exigiria cookie
+assinado, e com ele viriam segredo, expiração e revogação para administrar.
+A consequência que o resto do código respeita: o `Usuario` de lá é uma
+fotografia do momento do login e serve para desenhar a tela, **nunca para
+autorizar uma ação** — quem decide permissão é o banco, relido a cada
+operação em `admin_service`. O módulo também traz o freio de tentativas de
+login (5 falhas → 60 s), que é conveniência contra chute manual, não defesa
+contra ataque automatizado (o que segura força bruta é o custo do Argon2).
+
+
+- `streamlit_app.py`: `set_page_config` + tema + o portão descrito acima +
+  navbar própria (`st.segmented_control`) que roteia para `busca`,
+  `dashboard`, `adicionar` e — só para admins — `usuarios`. O menu da conta
+  (popover com o primeiro nome) leva à troca de senha voluntária e ao logout.
+  Captura `ConfiguracaoError`/`AcervoError` e mostra erro amigável.
 - `tema.py`: paleta exportada (constantes usadas também nos gráficos Altair)
   e CSS injetado uma vez. **Atenção**: o override global de fonte exclui os
   ícones do Streamlit (`stIconMaterial` precisa da fonte Material Symbols —
   sem a exceção, ícones viram texto tipo "arrow_right").
 - `componentes.py`: helpers **puros** (resumir, formatar_numero,
-  total_de_paginas, rotulo_categoria, previa_de_codigo) — são esses que os
-  testes unitários cobrem — e componentes com `st.*` (card de resultado,
-  paginação por callbacks em `session_state`).
+  total_de_paginas, rotulo_categoria, previa_de_codigo, opcoes_de_navegacao,
+  primeiro_nome, formatar_data) — são esses que os testes unitários cobrem —
+  e componentes com `st.*` (card de resultado, paginação por callbacks em
+  `session_state`).
 - `paginas/busca.py`: fluxo reativo; consultas com `@st.cache_data`
   (TTL 5–10 min); mudança de parâmetros volta à página 1; diálogo
   (`st.dialog`) para o arquivo completo.
@@ -148,6 +220,17 @@ em memória.
   resultado por arquivo (erro em um arquivo não interrompe os demais) e
   `st.cache_data.clear()` após gravar — o conteúdo novo aparece na busca
   imediatamente.
+- `paginas/login.py`: entrar e criar conta. Única página visível sem sessão,
+  então tudo ali vale como texto público — as frases vêm prontas do
+  `auth_service`, que é onde a regra de não revelar cadastros é testada.
+- `paginas/trocar_senha.py`: serve à troca voluntária e à obrigatória
+  (`obrigatoria=True`), que muda os rótulos e o texto explicativo.
+- `paginas/usuarios.py`: painel do admin. Uma consulta (`listar_usuarios`)
+  agrupada em três abas — Pendentes (com contagem) / Ativos / Recusados e
+  bloqueados — e os botões possíveis a partir de cada status. A senha
+  temporária de um reset aparece **uma vez**, sobrevive ao rerun via
+  `session_state` e some no F5. Ações sobre a própria conta não são
+  desenhadas: são exatamente as que o serviço barra.
 
 ## Decisões de projeto (o porquê)
 
@@ -165,3 +248,11 @@ em memória.
    fakes em memória; os de integração usam schema descartável no Neon real.
 6. **Dataclasses frozen.** Compatíveis com `st.cache_data` (serializáveis) e
    imunes a mutação acidental entre camadas.
+7. **Permissão é decidida no serviço, não na tela.** Esconder um botão é
+   conveniência visual; a barreira está em `admin_service`, que relê o papel
+   do ator no banco a cada ação. A interface pode estar desatualizada — a
+   sessão não expira enquanto a aba fica aberta — e isso é aceitável
+   justamente porque ela não autoriza nada.
+8. **Cadastro é auto-serviço, acesso não.** Qualquer um cria conta; ninguém
+   entra sem um admin aprovar. Isso mantém o app publicável sem transformar
+   o dono em cadastrador manual de e-mails.
