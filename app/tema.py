@@ -11,6 +11,8 @@ FUNDO = "#0e0b16"
 FUNDO_CARD = "#151021"
 ROXO = "#a78bfa"
 ROXO_PROFUNDO = "#7c3aed"
+ROXO_DARK = "#5b21b6"
+BORDA_INPUT = "rgba(109, 40, 217, 0.55)"
 CIANO = "#7dd3fc"
 ROSA = "#f0a6ce"
 VERDE = "#6ee7b7"
@@ -124,18 +126,63 @@ div[class*="st-key-card_"]:hover {{
     text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem;
 }}
 
-/* ---------- inputs, botões e código ---------- */
+/* ---------- inputs — borda roxa suave escura ---------- */
 [data-testid="stTextInput"] input {{ padding: 0.85rem 1rem; font-size: 1.02rem; }}
-[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {{
-    border-color: {ROXO};
-    box-shadow: 0 0 0 1px {ROXO}55, 0 0 20px {ROXO_PROFUNDO}30;
+[data-testid="stTextInput"] div[data-baseweb="input"],
+[data-testid="stTextArea"] div[data-baseweb="textarea"],
+[data-testid="stNumberInput"] div[data-baseweb="input"],
+[data-testid="stDateInput"] div[data-baseweb="input"],
+[data-testid="stTimeInput"] div[data-baseweb="input"],
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {{
+    border: 1px solid {BORDA_INPUT};
+    background-color: {FUNDO_CARD};
 }}
-.stButton button {{ transition: border-color 0.15s ease, box-shadow 0.15s ease; }}
-.stButton button:hover:enabled {{
-    border-color: {ROXO};
-    box-shadow: 0 0 14px rgba(124, 58, 237, 0.25);
+[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
+[data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within,
+[data-testid="stNumberInput"] div[data-baseweb="input"]:focus-within,
+[data-testid="stDateInput"] div[data-baseweb="input"]:focus-within,
+[data-testid="stTimeInput"] div[data-baseweb="input"]:focus-within,
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div:focus-within,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div:focus-within {{
+    border-color: {ROXO_PROFUNDO};
+    box-shadow: 0 0 0 1px {ROXO_PROFUNDO}55, 0 0 20px {ROXO_PROFUNDO}30;
 }}
-[data-testid="stCode"] {{ border: 1px solid rgba(167, 139, 250, 0.14); border-radius: 10px; }}
+[data-testid="stFileUploaderDropzone"] {{
+    border: 1px dashed {BORDA_INPUT};
+    background-color: {FUNDO_CARD};
+}}
+
+/* ---------- botões — roxo dark ---------- */
+.stButton button, .stDownloadButton button, .stFormSubmitButton button,
+[data-testid="stFileUploader"] button {{
+    background: linear-gradient(180deg, {ROXO_PROFUNDO} 0%, {ROXO_DARK} 100%);
+    border: 1px solid {ROXO_PROFUNDO};
+    color: #f5f1ff;
+    font-weight: 600;
+    transition: filter 0.15s ease, border-color 0.15s ease,
+                box-shadow 0.15s ease, transform 0.1s ease;
+}}
+.stButton button:hover:enabled, .stDownloadButton button:hover:enabled,
+.stFormSubmitButton button:hover:enabled,
+[data-testid="stFileUploader"] button:hover:enabled {{
+    filter: brightness(1.12);
+    border-color: {ROXO};
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.35);
+    color: #f5f1ff;
+}}
+.stButton button:active:enabled, .stDownloadButton button:active:enabled,
+.stFormSubmitButton button:active:enabled {{ transform: translateY(1px); }}
+
+/* segmented control (navegação) segue o mesmo roxo */
+button[kind="segmented_control"] {{ border-color: {BORDA_INPUT}; }}
+button[kind="segmented_controlActive"] {{
+    background: linear-gradient(180deg, {ROXO_PROFUNDO} 0%, {ROXO_DARK} 100%) !important;
+    border-color: {ROXO_PROFUNDO} !important;
+    color: #f5f1ff !important;
+}}
+
+[data-testid="stCode"] {{ border: 1px solid {BORDA_INPUT}; border-radius: 10px; }}
 
 /* ---------- diálogo (arquivo completo) ---------- */
 div[role="dialog"] {{

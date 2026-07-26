@@ -3,13 +3,13 @@
 
 [theme]
 base = "dark"
-primaryColor = "#a78bfa"
+primaryColor = "#7c3aed"
 backgroundColor = "#0e0b16"
 secondaryBackgroundColor = "#151021"
 textColor = "#e9e4f7"
 linkColor = "#7dd3fc"
 codeBackgroundColor = "#131022"
-borderColor = "#2c2344"
+borderColor = "#46307a"
 baseRadius = "0.75rem"
 
 [browser]
