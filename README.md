@@ -41,8 +41,10 @@ streamlit run app/streamlit_app.py
 A interface abre em `http://localhost:8501` com três páginas:
 
 - **Busca** — full-text ("regressão linear") ou trecho literal de código
-  ("df.groupby"), com filtros por categoria e linguagem, paginação e visualização
-  do arquivo completo.
+  ("df.groupby"), com filtros por categoria, conteúdo e linguagem, paginação e
+  visualização do arquivo completo. O filtro de conteúdo depende da categoria:
+  escolhida a categoria, ele lista os arquivos dela (capítulos, notebooks,
+  slides) e, sem termo digitado, mostra o sumário do conteúdo escolhido.
 - **Dashboard** — totais do acervo e distribuição de blocos por categoria.
 - **Adicionar** — upload de novos conteúdos direto para o banco
   (`.ipynb`, `.sql`, `.py`, `.md`, `.txt`, `.js`, `.pdf`, `.pptx`), com criação

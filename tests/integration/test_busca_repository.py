@@ -141,6 +141,56 @@ def test_blocos_do_arquivo_vem_na_ordem(acervo_semeado):
     assert blocos[0].titulo == "Regressão linear simples"
 
 
+def test_busca_filtra_por_arquivo_dentro_da_categoria(acervo_semeado):
+    repo = BuscaRepository(acervo_semeado["schema"])
+    with cursor() as cur:
+        _, total_na_categoria = repo.buscar_texto(
+            cur, "regressão OR agrupamento", categoria_id=acervo_semeado["cat_ds"],
+        )
+        resultados, total_no_arquivo = repo.buscar_texto(
+            cur, "regressão OR agrupamento",
+            categoria_id=acervo_semeado["cat_ds"],
+            arquivo_caminho="DS_BUSCA_TESTE/regressao.ipynb",
+        )
+        _, total_em_outro_arquivo = repo.buscar_texto(
+            cur, "regressão OR agrupamento",
+            arquivo_caminho="SQL_BUSCA_TESTE/consultas.sql",
+        )
+
+    assert total_na_categoria == total_no_arquivo == 2
+    assert {r.arquivo_caminho for r in resultados} == {"DS_BUSCA_TESTE/regressao.ipynb"}
+    assert total_em_outro_arquivo == 0
+
+
+def test_listar_conteudos_traz_os_arquivos_da_categoria_com_contagem(acervo_semeado):
+    repo = BuscaRepository(acervo_semeado["schema"])
+    with cursor() as cur:
+        conteudos_ds = repo.listar_conteudos(cur, acervo_semeado["cat_ds"])
+        conteudos_sql = repo.listar_conteudos(cur, acervo_semeado["cat_sql"])
+
+    assert [c.caminho for c in conteudos_ds] == ["DS_BUSCA_TESTE/regressao.ipynb"]
+    assert conteudos_ds[0].total_blocos == 2
+    assert conteudos_ds[0].pasta_raiz == "DS_BUSCA_TESTE"
+    # cada categoria só enxerga o que é seu
+    assert [c.caminho for c in conteudos_sql] == ["SQL_BUSCA_TESTE/consultas.sql"]
+    assert conteudos_sql[0].total_blocos == 1
+
+
+def test_listar_conteudos_ignora_arquivo_sem_blocos(acervo_semeado):
+    """Arquivo de dado (ou que falhou na extração) não vira opção de filtro."""
+    repo = BuscaRepository(acervo_semeado["schema"])
+    arquivos_repo = ArquivoRepository(acervo_semeado["schema"])
+    with cursor() as cur:
+        arquivos_repo.upsert(cur, Arquivo(
+            id=None, caminho="DS_BUSCA_TESTE/base.csv", categoria_id=acervo_semeado["cat_ds"],
+            extensao=".csv", tipo="dado", tamanho_bytes=10, hash="h_csv",
+            duplicado_de=None,
+        ))
+        conteudos = repo.listar_conteudos(cur, acervo_semeado["cat_ds"])
+
+    assert "DS_BUSCA_TESTE/base.csv" not in [c.caminho for c in conteudos]
+
+
 def test_listar_categorias_e_linguagens(acervo_semeado):
     repo = BuscaRepository(acervo_semeado["schema"])
     with cursor() as cur:

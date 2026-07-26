@@ -42,6 +42,18 @@ class Bloco:
 
 
 @dataclass(frozen=True)
+class ConteudoCategoria:
+    """Um arquivo indexado de uma categoria — item do filtro de conteúdo.
+
+    `pasta_raiz` vem junto porque é ela que a UI remove do início do caminho
+    para montar um rótulo curto ("…/Slides/Regressão.pdf").
+    """
+    caminho: str
+    pasta_raiz: str
+    total_blocos: int
+
+
+@dataclass(frozen=True)
 class ResultadoBusca:
     bloco_id: int
     arquivo_caminho: str

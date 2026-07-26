@@ -17,6 +17,7 @@ from acervo.core.models import (
     Arquivo,
     Bloco,
     Categoria,
+    ConteudoCategoria,
     EstatisticaCategoria,
     ResultadoBusca,
     ResumoAcervo,
@@ -165,10 +166,11 @@ class BuscaRepository:
         *,
         categoria_id: Optional[int] = None,
         linguagem: Optional[str] = None,
+        arquivo_caminho: Optional[str] = None,
         limite: int = 20,
         offset: int = 0,
     ) -> tuple[list[ResultadoBusca], int]:
-        filtros, params_filtros = self._montar_filtros(categoria_id, linguagem)
+        filtros, params_filtros = self._montar_filtros(categoria_id, linguagem, arquivo_caminho)
         # mesma configuração usada na coluna texto_busca (migração 0002):
         # unaccent + stemming português nos dois lados da comparação
         config = f"{self.schema}.portugues_unaccent"
@@ -188,10 +190,11 @@ class BuscaRepository:
         *,
         categoria_id: Optional[int] = None,
         linguagem: Optional[str] = None,
+        arquivo_caminho: Optional[str] = None,
         limite: int = 20,
         offset: int = 0,
     ) -> tuple[list[ResultadoBusca], int]:
-        filtros, params_filtros = self._montar_filtros(categoria_id, linguagem)
+        filtros, params_filtros = self._montar_filtros(categoria_id, linguagem, arquivo_caminho)
         # escapa curingas do LIKE para que "100%" busque o texto literal "100%"
         escapado = trecho.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         sql = (
@@ -227,8 +230,33 @@ class BuscaRepository:
         )
         return [linha[0] for linha in cur.fetchall()]
 
+    def listar_conteudos(self, cur, categoria_id: int) -> list[ConteudoCategoria]:
+        """Arquivos de uma categoria que têm conteúdo indexado.
+
+        Alimenta o filtro dependente da UI: escolhida a categoria (ex.: o livro
+        de Estatística), estes são os assuntos/arquivos que existem dentro dela.
+        O `JOIN` com blocos (em vez de `LEFT JOIN`) já descarta arquivos de
+        dados e os que falharam na extração — filtrar por eles não traria
+        resultado nenhum.
+        """
+        cur.execute(
+            f'SELECT a.caminho, c.pasta_raiz, count(b.id) AS total_blocos '
+            f'FROM "{self.schema}".arquivos a '
+            f'JOIN "{self.schema}".categorias c ON c.id = a.categoria_id '
+            f'JOIN "{self.schema}".blocos b ON b.arquivo_id = a.id '
+            f'WHERE a.categoria_id = %s '
+            f'GROUP BY a.caminho, c.pasta_raiz '
+            f'ORDER BY a.caminho',
+            (categoria_id,),
+        )
+        return [ConteudoCategoria(*linha) for linha in cur.fetchall()]
+
     @staticmethod
-    def _montar_filtros(categoria_id: Optional[int], linguagem: Optional[str]) -> tuple[str, list]:
+    def _montar_filtros(
+        categoria_id: Optional[int],
+        linguagem: Optional[str],
+        arquivo_caminho: Optional[str] = None,
+    ) -> tuple[str, list]:
         filtros = ""
         params: list = []
         if categoria_id is not None:
@@ -237,6 +265,9 @@ class BuscaRepository:
         if linguagem is not None:
             filtros += " AND b.linguagem = %s"
             params.append(linguagem)
+        if arquivo_caminho is not None:
+            filtros += " AND a.caminho = %s"
+            params.append(arquivo_caminho)
         return filtros, params
 
     @staticmethod

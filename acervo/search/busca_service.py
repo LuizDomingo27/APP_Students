@@ -15,7 +15,7 @@ Modos de busca:
 from typing import Optional
 
 from acervo.core.exceptions import AcervoError, BuscaError
-from acervo.core.models import Bloco, PaginaBusca
+from acervo.core.models import Bloco, ConteudoCategoria, PaginaBusca
 from acervo.persistence.db import cursor
 from acervo.persistence.repository import BuscaRepository
 
@@ -30,12 +30,14 @@ def buscar(
     modo: str = "texto",
     categoria_id: Optional[int] = None,
     linguagem: Optional[str] = None,
+    arquivo_caminho: Optional[str] = None,
     pagina: int = 1,
     limite: int = LIMITE_PADRAO,
     schema: str = "acervo",
     repo: Optional[BuscaRepository] = None,
 ) -> PaginaBusca:
     termo = (termo or "").strip()
+    arquivo_caminho = (arquivo_caminho or "").strip() or None
     if not termo:
         raise BuscaError("Informe um termo de busca.")
     if modo not in MODOS_VALIDOS:
@@ -54,6 +56,7 @@ def buscar(
             resultados, total = buscar_fn(
                 cur, termo,
                 categoria_id=categoria_id, linguagem=linguagem,
+                arquivo_caminho=arquivo_caminho,
                 limite=limite, offset=offset,
             )
     except BuscaError:
@@ -103,3 +106,27 @@ def opcoes_de_filtro(
             }
     except AcervoError as e:
         raise BuscaError(f"Não foi possível carregar os filtros: {e}") from e
+
+
+def conteudos_da_categoria(
+    categoria_id: Optional[int],
+    *,
+    schema: str = "acervo",
+    repo: Optional[BuscaRepository] = None,
+) -> list[ConteudoCategoria]:
+    """Os arquivos indexados de uma categoria — popula o filtro dependente.
+
+    Sem categoria escolhida não há o que listar (a lista completa do acervo
+    teria centenas de itens e nenhuma utilidade como filtro), então devolve
+    vazio em vez de erro: para a UI, "nenhuma categoria" e "categoria sem
+    conteúdo" resultam no mesmo dropdown desabilitado.
+    """
+    if categoria_id is None:
+        return []
+
+    repo = repo or BuscaRepository(schema)
+    try:
+        with cursor() as cur:
+            return repo.listar_conteudos(cur, categoria_id)
+    except AcervoError as e:
+        raise BuscaError(f"Não foi possível carregar os conteúdos da categoria: {e}") from e

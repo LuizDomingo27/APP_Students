@@ -1,4 +1,5 @@
 """Testes dos helpers puros da UI (app/componentes.py) — sem subir Streamlit."""
+from acervo.core.models import Bloco, ConteudoCategoria
 from app.componentes import (
     cartao_metrica_html,
     chip_html,
@@ -6,6 +7,9 @@ from app.componentes import (
     previa_de_codigo,
     resumir,
     rotulo_categoria,
+    rotulo_conteudo,
+    rotulos_de_conteudo,
+    titulo_do_bloco,
     total_de_paginas,
 )
 
@@ -38,6 +42,72 @@ def test_total_de_paginas():
 def test_rotulo_categoria_com_e_sem_subcategoria():
     assert rotulo_categoria("Databricks", "Módulo 1") == "Databricks · Módulo 1"
     assert rotulo_categoria("Estatística", None) == "Estatística"
+
+
+def test_rotulo_conteudo_remove_a_pasta_raiz_e_encurta_caminhos_fundos():
+    fundo = "Estatistica_DS/Livro/Slides/Regressao.pdf"
+    assert rotulo_conteudo("Estatistica_DS/estatistica.ipynb", "Estatistica_DS") == "estatistica.ipynb"
+    assert rotulo_conteudo(fundo, "Estatistica_DS") == "…/Regressao.pdf"
+    assert rotulo_conteudo(fundo, "Estatistica_DS", niveis=2) == "…/Slides/Regressao.pdf"
+    # niveis=0 (ou além da profundidade) devolve o caminho relativo inteiro
+    assert rotulo_conteudo(fundo, "Estatistica_DS", niveis=0) == "Livro/Slides/Regressao.pdf"
+    assert rotulo_conteudo(fundo, "Estatistica_DS", niveis=9) == "Livro/Slides/Regressao.pdf"
+    # separador do Windows e raiz que não bate com o caminho não quebram o rótulo
+    assert rotulo_conteudo("SQL\\aula.sql", "SQL") == "aula.sql"
+    assert rotulo_conteudo("Outra/aula.sql", "SQL") == "…/aula.sql"
+
+
+def _conteudo(caminho, pasta_raiz="Cat", total_blocos=3):
+    return ConteudoCategoria(caminho=caminho, pasta_raiz=pasta_raiz, total_blocos=total_blocos)
+
+
+def test_rotulos_de_conteudo_mapeiam_para_o_caminho_e_contam_blocos():
+    rotulos = rotulos_de_conteudo([_conteudo("Cat/aula.sql", total_blocos=1),
+                                   _conteudo("Cat/notas.ipynb", total_blocos=12)])
+
+    assert rotulos == {"aula.sql · 1 bloco": "Cat/aula.sql",
+                       "notas.ipynb · 12 blocos": "Cat/notas.ipynb"}
+
+
+def test_rotulos_de_conteudo_mostram_so_o_nome_do_arquivo_quando_ja_basta():
+    rotulos = rotulos_de_conteudo([_conteudo("Cat/upload_cat/Capítulo 01.ipynb"),
+                                   _conteudo("Cat/upload_cat/Capítulo 02.ipynb")])
+
+    assert list(rotulos) == ["…/Capítulo 01.ipynb · 3 blocos", "…/Capítulo 02.ipynb · 3 blocos"]
+
+
+def test_rotulos_de_conteudo_sobem_um_nivel_ate_ficarem_unicos():
+    conteudos = [_conteudo("Cat/mod1/aula/querys.txt"),
+                 _conteudo("Cat/mod2/aula/querys.txt"),
+                 _conteudo("Cat/notas.sql")]
+
+    rotulos = rotulos_de_conteudo(conteudos)
+
+    # nenhum arquivo pode sumir por colisão de rótulo
+    assert len(rotulos) == 3
+    assert set(rotulos.values()) == {c.caminho for c in conteudos}
+    # "querys.txt" colide e "aula/querys.txt" também: sobra o caminho relativo
+    assert rotulos["mod1/aula/querys.txt · 3 blocos"] == "Cat/mod1/aula/querys.txt"
+    assert rotulos["notas.sql · 3 blocos"] == "Cat/notas.sql"
+
+
+def _bloco(titulo=None, explicacao=None, codigo=None):
+    return Bloco(id=1, arquivo_id=1, ordem=0, titulo=titulo, explicacao=explicacao,
+                 codigo=codigo, linguagem=None)
+
+
+def test_titulo_do_bloco_cai_para_explicacao_e_depois_para_codigo():
+    assert titulo_do_bloco(_bloco(titulo="Regressão")) == "Regressão"
+    assert titulo_do_bloco(_bloco(titulo="   ", explicacao="Ajuste do modelo")) == "Ajuste do modelo"
+    assert titulo_do_bloco(_bloco(codigo="df.groupby('x')")) == "df.groupby('x')"
+    assert titulo_do_bloco(_bloco()) == "(bloco sem título)"
+
+
+def test_titulo_do_bloco_pula_faixas_de_comentario_do_notebook():
+    codigo = "########################\n# MANUAL DE ANÁLISE\n########\ndf = pd.read_csv('a.csv')"
+    assert titulo_do_bloco(_bloco(codigo=codigo)) == "MANUAL DE ANÁLISE"
+    # linha só de decoração não vira título
+    assert titulo_do_bloco(_bloco(codigo="# ====== #\n")) == "(bloco sem título)"
 
 
 def test_previa_de_codigo_limita_linhas():

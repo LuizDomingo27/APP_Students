@@ -102,6 +102,20 @@ div[class*="st-key-card_"]:hover {{
 .card-explicacao {{ color: {TEXTO_SUAVE}; font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.35rem; }}
 .card-meta {{ color: {TEXTO_SUAVE}; font-size: 0.78rem; letter-spacing: 0.02em; }}
 
+/* ---------- sumário do conteúdo escolhido (busca sem termo) ---------- */
+.sumario {{
+    list-style: none; padding: 0.9rem 1.2rem; margin: 0.7rem 0;
+    background: linear-gradient(180deg, {FUNDO_CARD} 0%, #120e1d 100%);
+    border: 1px solid {BORDA}; border-radius: 14px;
+}}
+.sumario li {{
+    color: {TEXTO}; font-size: 0.92rem; line-height: 1.5;
+    padding: 0.32rem 0 0.32rem 1.05rem; position: relative;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.10);
+}}
+.sumario li:last-child {{ border-bottom: none; }}
+.sumario li::before {{ content: "▸"; position: absolute; left: 0; color: {ROXO}; }}
+
 .acervo-chip {{
     display: inline-block; padding: 0.14rem 0.65rem;
     border: 1px solid; border-radius: 999px;

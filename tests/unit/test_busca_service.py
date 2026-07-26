@@ -82,13 +82,64 @@ def test_modo_texto_usa_variante_texto_e_traduz_pagina_em_offset():
 def test_modo_codigo_usa_variante_codigo_e_repassa_filtros():
     repo = RepoFalso()
 
-    busca_service.buscar("df.groupby", modo="codigo", categoria_id=7, linguagem="python", repo=repo)
+    busca_service.buscar(
+        "df.groupby", modo="codigo", categoria_id=7, linguagem="python",
+        arquivo_caminho="Cat/aula.ipynb", repo=repo,
+    )
 
     (variante, termo, kwargs), = repo.chamadas
     assert variante == "codigo"
     assert termo == "df.groupby"
     assert kwargs["categoria_id"] == 7
     assert kwargs["linguagem"] == "python"
+    assert kwargs["arquivo_caminho"] == "Cat/aula.ipynb"
+
+
+def test_arquivo_caminho_em_branco_nao_vira_filtro():
+    repo = RepoFalso()
+
+    busca_service.buscar("pandas", arquivo_caminho="   ", repo=repo)
+
+    (_, _, kwargs), = repo.chamadas
+    assert kwargs["arquivo_caminho"] is None
+
+
+def test_conteudos_sem_categoria_nao_consulta_o_banco():
+    class RepoProibido:
+        def listar_conteudos(self, cur, categoria_id):  # pragma: no cover - não deve rodar
+            raise AssertionError("não deveria consultar o banco sem categoria")
+
+    assert busca_service.conteudos_da_categoria(None, repo=RepoProibido()) == []
+
+
+def test_conteudos_da_categoria_repassa_o_id():
+    from acervo.core.models import ConteudoCategoria
+
+    conteudo = ConteudoCategoria(caminho="Cat/aula.sql", pasta_raiz="Cat", total_blocos=4)
+
+    class RepoConteudos:
+        def __init__(self):
+            self.chamadas = []
+
+        def listar_conteudos(self, cur, categoria_id):
+            self.chamadas.append(categoria_id)
+            return [conteudo]
+
+    repo = RepoConteudos()
+
+    assert busca_service.conteudos_da_categoria(3, repo=repo) == [conteudo]
+    assert repo.chamadas == [3]
+
+
+def test_conteudos_da_categoria_converte_falha_de_infra():
+    from acervo.core.exceptions import ConexaoBancoError
+
+    class RepoQuebrado:
+        def listar_conteudos(self, cur, categoria_id):
+            raise ConexaoBancoError("banco fora do ar")
+
+    with pytest.raises(BuscaError, match="banco fora do ar"):
+        busca_service.conteudos_da_categoria(1, repo=RepoQuebrado())
 
 
 def test_falha_de_infraestrutura_vira_busca_error():

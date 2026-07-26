@@ -5,11 +5,11 @@ páginas) são puras de propósito — são elas que os testes unitários cobrem
 sem precisar subir o Streamlit.
 """
 import html
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence
 
 import streamlit as st
 
-from acervo.core.models import ResultadoBusca
+from acervo.core.models import Bloco, ConteudoCategoria, ResultadoBusca
 from app import tema
 
 MAX_LINHAS_PREVIA_CODIGO = 12
@@ -36,6 +36,72 @@ def total_de_paginas(total: int, limite: int) -> int:
 
 def rotulo_categoria(nome: str, subcategoria: Optional[str]) -> str:
     return f"{nome} · {subcategoria}" if subcategoria else nome
+
+
+def rotulo_conteudo(caminho: str, pasta_raiz: Optional[str] = None, *, niveis: int = 1) -> str:
+    """Nome legível de um arquivo dentro da categoria.
+
+    A pasta raiz sai do rótulo porque ela *é* a categoria já escolhida no
+    dropdown anterior. `niveis` diz quantos segmentos finais do caminho entram
+    no rótulo (0 = o caminho relativo inteiro); o que foi cortado vira "…/",
+    para o nome do arquivo caber na largura do filtro.
+    """
+    partes = [parte for parte in caminho.replace("\\", "/").split("/") if parte]
+    if pasta_raiz and partes and partes[0] == pasta_raiz:
+        partes = partes[1:]
+    if not partes:
+        return caminho
+    if niveis <= 0 or niveis >= len(partes):
+        return "/".join(partes)
+    return "…/" + "/".join(partes[-niveis:])
+
+
+def rotulos_de_conteudo(conteudos: Sequence[ConteudoCategoria]) -> dict[str, str]:
+    """Rótulo exibido → caminho do arquivo, na ordem em que vieram do banco.
+
+    Só o nome do arquivo já basta na maioria das categorias; quando ele se
+    repete (o acervo tem vários "querys_da_aula.txt"), o rótulo ganha uma
+    pasta de cada vez até todos ficarem distintos. A unicidade não é cosmética:
+    rótulos iguais viram a mesma chave do dicionário e um dos arquivos sumiria
+    do dropdown.
+    """
+    itens = list(conteudos)
+    bases = [c.caminho for c in itens]  # último recurso — único por construção
+    for niveis in (1, 2, 0):
+        candidatos = [rotulo_conteudo(c.caminho, c.pasta_raiz, niveis=niveis) for c in itens]
+        if len(set(candidatos)) == len(itens):
+            bases = candidatos
+            break
+
+    rotulos: dict[str, str] = {}
+    for conteudo, base in zip(itens, bases):
+        plural = "s" if conteudo.total_blocos != 1 else ""
+        rotulos[f"{base} · {conteudo.total_blocos} bloco{plural}"] = conteudo.caminho
+    return rotulos
+
+
+def _primeira_linha_util(texto: Optional[str]) -> str:
+    """A primeira linha que diz alguma coisa.
+
+    Células de notebook começam com faixas de '#' e '=' como separador visual;
+    num sumário elas ocupariam a linha inteira sem informar nada.
+    """
+    for linha in (texto or "").splitlines():
+        limpo = linha.strip().strip("#").strip(" #-=*_").strip()
+        if any(caractere.isalnum() for caractere in limpo):
+            return limpo
+    return ""
+
+
+def titulo_do_bloco(bloco: Bloco) -> str:
+    """O melhor rótulo curto para um bloco — nem todo parser produz título."""
+    if bloco.titulo and bloco.titulo.strip():
+        return bloco.titulo.strip()
+    for alternativa in (bloco.explicacao, bloco.codigo):
+        linha = _primeira_linha_util(alternativa)
+        if linha:
+            return resumir(linha, 90)
+    return "(bloco sem título)"
 
 
 def previa_de_codigo(codigo: str, max_linhas: int = MAX_LINHAS_PREVIA_CODIGO) -> str:
