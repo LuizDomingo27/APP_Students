@@ -20,7 +20,7 @@ def _cabecalho() -> None:
     st.markdown(
         '<div class="acesso-cabecalho">'
         '<div class="marca"><span class="marca-ponto"></span>'
-        'Acervo&nbsp;<span class="grad">DS</span></div>'
+        'My Brain&nbsp;<span class="grad">My Friend</span></div>'
         '<p>Entre para pesquisar no acervo.</p>'
         "</div>",
         unsafe_allow_html=True,

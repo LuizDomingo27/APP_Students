@@ -53,7 +53,7 @@ def _executar(acao: Callable[[], None], sucesso: str) -> None:
     except AcervoError as e:
         st.error(str(e))
     else:
-        st.toast(sucesso, icon="🟣")
+        st.toast(sucesso, icon="🧠")
         st.rerun()
 
 
