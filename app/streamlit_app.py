@@ -33,11 +33,12 @@ from app.paginas import (  # noqa: E402
 from app.tema import aplicar_tema  # noqa: E402
 
 st.set_page_config(
-    page_title="Acervo DS",
-    page_icon="🟣",
+    page_title="My brain - my friend",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
 aplicar_tema()
 
 # A troca de senha voluntária não é um item da navbar: entra pelo menu da
@@ -71,11 +72,13 @@ def _navbar(usuario: Usuario) -> str:
         col_marca, col_nav, col_conta = st.columns(
             [1.0, 1.5, 0.5], vertical_alignment="center",
         )
+        
         col_marca.markdown(
             '<div class="marca"><span class="marca-ponto"></span>'
-            'Acervo&nbsp;<span class="grad">DS</span></div>',
+            'My Brain&nbsp;<span class="grad">My Friend</span></div>',
             unsafe_allow_html=True,
         )
+        
         with col_nav:
             pagina = st.segmented_control(
                 "Navegação",
@@ -125,6 +128,5 @@ def main() -> None:
         )
     except AcervoError as e:
         st.error(f"Algo deu errado ao falar com o banco: {e}")
-
 
 main()
