@@ -40,6 +40,20 @@ def get_pool() -> ConnectionPool:
             max_size=5,
             timeout=10,
             open=True,
+            # O Neon suspende o banco após ~5 min ocioso e derruba o TCP das
+            # conexões do pool. `check` testa a conexão antes de entregá-la:
+            # se estiver morta, o pool a descarta e abre outra (o que também
+            # acorda o Neon), em vez de entregar um socket morto ao chamador.
+            check=ConnectionPool.check_connection,
+            # Fecha conexões ociosas antes da janela de suspensão do Neon,
+            # para nunca acumular sockets que o servidor já matou.
+            max_idle=240,
+            kwargs={
+                "keepalives": 1,
+                "keepalives_idle": 30,
+                "keepalives_interval": 10,
+                "keepalives_count": 3,
+            },
         )
     return _pool
 
@@ -79,6 +93,25 @@ def _obter_conexao() -> psycopg.Connection:
     ) from ultimo_erro
 
 
+def _rollback_seguro(conn: psycopg.Connection) -> None:
+    """Rollback que tolera conexão já morta (ex.: derrubada pelo Neon).
+
+    Se o rollback falhar, a conexão é fechada para que `putconn` a descarte
+    e o pool crie uma nova — o erro original do chamador segue propagando.
+    """
+    try:
+        conn.rollback()
+    except psycopg.Error as e:
+        logger.warning(
+            "Rollback falhou (conexão provavelmente encerrada pelo servidor); "
+            "descartando a conexão: %s", e,
+        )
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 @contextmanager
 def cursor():
     """Fornece um cursor com commit/rollback automático.
@@ -95,10 +128,10 @@ def cursor():
                 yield cur
                 conn.commit()
             except psycopg.Error as e:
-                conn.rollback()
+                _rollback_seguro(conn)
                 raise ConexaoBancoError(f"Erro ao executar operação no banco: {e}") from e
             except Exception:
-                conn.rollback()
+                _rollback_seguro(conn)
                 raise
     finally:
         pool.putconn(conn)
