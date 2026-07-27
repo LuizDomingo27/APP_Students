@@ -306,19 +306,27 @@ porque foi ela que a pessoa acabou de fazer.
 
 Três detalhes que parecem gambiarra e não são:
 
-- **O controlador vive na página, não no iframe.** `st.iframe` pode trocar o
+- **O controlador roda na página, não no iframe.** `st.iframe` pode trocar o
   iframe a cada rerun; um reconhecimento de fala que morasse lá dentro
-  morreria a cada comando executado. O iframe é só um instalador.
+  morreria a cada comando executado. O iframe é só um instalador: injeta
+  `_CONTROLADOR_JS` como um `<script>` no `head` da página, e o código passa a
+  ser da página — `montar.constructor === window.Function`, verificável no
+  console.
+  Quem executa importa mais do que parece: um `SpeechRecognition` criado
+  dentro do iframe pertence ao documento *do iframe*, e esse documento nunca
+  recebe *user activation* (o clique foi no botão da página, e ativação sobe
+  para os ancestrais, nunca desce). Sem ativação o Chrome não abre o pedido de
+  permissão do microfone — o que no `localhost` não aparece, porque a
+  permissão já está concedida e não há o que perguntar, mas num domínio novo
+  (o app publicado no Streamlit Cloud) deixa o botão mudo. Era esse o bug.
 - **Uma vigia de 400 ms reencaixa o botão**, em vez de o iframe reencaixá-lo
-  ao reexecutar. Foi o conserto de um travamento real: o Streamlit redesenha
-  o slot e leva o botão junto, mas *não* reexecuta o iframe de forma
-  confiável — e quando ele é trocado, o realm antigo é descartado, o que mata
-  os timers registrados por ele (embora `window.__acervoVoz` continue
-  chamável, porque a página guarda a referência). Por isso a vigia é rearmada
-  no topo do script, em toda execução: a que está no ar é sempre a do iframe
-  vivo. Pelo mesmo motivo o reconhecimento é recriado a cada `iniciar()` — o
-  `SpeechRecognition` do Chrome fica inutilizável depois de certos erros — e
-  o estado real vem de `onstart`/`onend`, não da nossa intenção.
+  ao reexecutar: o Streamlit redesenha o slot e leva o botão junto, mas *não*
+  reexecuta o iframe de forma confiável. Como a vigia é registrada pela
+  página, ela vive enquanto a aba viver — apagar o botão *e* todos os iframes
+  ainda o traz de volta em ~240 ms. Pelo mesmo espírito o reconhecimento é
+  recriado a cada `iniciar()` — o `SpeechRecognition` do Chrome fica
+  inutilizável depois de certos erros — e o estado real vem de
+  `onstart`/`onend`, não da nossa intenção.
 - **O campo de texto no meio do caminho** é a única via de um script do
   navegador devolver texto ao Python sem construir um componente React com
   build próprio. Ele é também a interface de reserva: os mesmos comandos

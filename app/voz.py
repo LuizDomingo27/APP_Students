@@ -42,13 +42,23 @@ com build próprio. E ele é também a interface de fallback — dá para digita
 os mesmos comandos, o que torna o assistente testável e utilizável em
 navegador sem reconhecimento de fala.
 
-## O controlador vive na página, não no iframe
+## O controlador roda na página, não no iframe
 
-`components.html` cria um iframe novo a cada rerun; um reconhecimento de fala
-que morasse lá dentro morreria a cada comando executado. Então o iframe é só
-um instalador: ele injeta o controlador na página principal, onde `window`
-sobrevive aos reruns, e nas vezes seguintes apenas reencaixa o botão no lugar
-que o Streamlit acabou de redesenhar.
+`st.iframe` cria um iframe novo a cada rerun; um reconhecimento de fala que
+morasse lá dentro morreria a cada comando executado. Então o iframe é só um
+instalador: ele injeta o controlador como um `<script>` na página principal,
+onde `window` sobrevive aos reruns.
+
+O que é injetado é o **código**, não só o botão — e essa distinção é o motivo
+de o microfone funcionar no `localhost` e não no Streamlit Cloud. Um script
+que roda dentro do iframe cria um `SpeechRecognition` preso ao documento do
+iframe, e esse documento nunca recebe *user activation*: o clique aconteceu
+no botão da página, e ativação sobe para os ancestrais, nunca desce para os
+filhos. Sem ativação, o Chrome não abre o pedido de permissão do microfone.
+No `localhost` isso passa despercebido porque a permissão já foi concedida
+uma vez e não há mais o que perguntar; num domínio novo, onde a pergunta é
+obrigatória, o mesmo clique simplesmente não produz nada. Rodando na página,
+o reconhecimento herda a ativação do clique e o navegador pergunta.
 """
 import html
 import json
@@ -378,28 +388,19 @@ def processar_pendente(*, eh_admin: bool) -> None:
 
 
 # ------------------------------------------------------------------- ponte JS
-# Instalado uma vez na página principal; nos reruns seguintes só reencaixa o
-# botão. Ver a nota "O controlador vive na página" no topo do módulo.
+# `_CONTROLADOR_JS` roda na página principal; `_PONTE_JS` roda no iframe e só
+# serve para instalá-lo. Ver "O controlador roda na página" no topo do módulo.
 
-_PONTE_JS = """
-<script>
+_CONTROLADOR_JS = """
 (function () {
-  const W = window.parent, D = W.document;
+  const W = window, D = W.document;
   const ATIVACOES = __ATIVACOES__;
 
-  // A vigia é rearmada em toda execução, e antes de tudo. Quando o Streamlit
-  // troca o iframe, o realm que registrou o intervalo anterior é descartado:
-  // o `__acervoVoz` continua chamável (a página guarda a referência), mas os
-  // timers dele morrem em silêncio. Rearmar aqui é o que garante que sempre
-  // exista uma vigia viva — a do iframe que está no ar agora.
-  if (W.__acervoVozVigia) W.clearInterval(W.__acervoVozVigia);
-  W.__acervoVozVigia = W.setInterval(
-    () => { if (W.__acervoVoz) W.__acervoVoz.montar(); }, 400);
-
-  // Reexecução do iframe: o controlador já existe e não pode ser recriado —
-  // só recebe o modo atual, porque a caixa "escuta contínua" mudou o script
-  // e é esta a única via de a mudança chegar até ele.
-  if (W.__acervoVoz) { W.__acervoVoz.modo(__CONTINUO__); W.__acervoVoz.montar(); return; }
+  // O app dentro de outro site (o painel do Streamlit Cloud embute a aplicação
+  // num iframe) só tem microfone se o container liberar, e não há como pedir
+  // isso daqui. Vale como diagnóstico: transforma um "não funciona" mudo em
+  // uma instrução — abrir o app na própria aba.
+  const embutido = W.self !== W.top;
 
   const Fala = W.SpeechRecognition || W.webkitSpeechRecognition;
   const ctrl = {
@@ -407,7 +408,7 @@ _PONTE_JS = """
     rodando: false,    // o que o reconhecimento está fazendo de verdade
     partindo: false,   // start() chamado, onstart ainda não veio
     recado: '',
-    continuo: __CONTINUO__,
+    continuo: false,   // chega pela ponte, em `modo()`
     rec: null,
     botao: null,
     status: null,
@@ -525,6 +526,11 @@ _PONTE_JS = """
         return;
       }
       ctrl.querendo = false;
+      if (ev.error === 'not-allowed' && embutido) {
+        recadar('Abra o app na própria aba: embutido em outra página o '
+                + 'navegador não libera o microfone.');
+        return;
+      }
       recadar(RECADOS[ev.error] || ('Falha no microfone: ' + ev.error));
     };
     return rec;
@@ -550,6 +556,8 @@ _PONTE_JS = """
 
   function iniciar() {
     if (!Fala) return;
+    // fora de HTTPS o Chrome nem chega a perguntar pela permissão
+    if (!W.isSecureContext) { recadar('O microfone só funciona em HTTPS.'); return; }
     ctrl.recado = '';
     ctrl.querendo = true;
     arrancar();
@@ -564,9 +572,9 @@ _PONTE_JS = """
 
   // O Streamlit redesenha o slot a cada rerun e leva o botão junto. O iframe
   // que instalou este script nem sempre reexecuta, então esperar por ele para
-  // remontar era apostar — e o botão sumia. Uma vigia curta torna a remontagem
-  // independente do que o Streamlit decidir refazer: o reconhecimento, esse,
-  // nunca reinicia, porque mora aqui e não no botão.
+  // remontar era apostar — e o botão sumia. Uma vigia curta (lá embaixo) torna
+  // a remontagem independente do que o Streamlit decidir refazer: o
+  // reconhecimento, esse, nunca reinicia, porque mora aqui e não no botão.
   function montar() {
     const slot = D.getElementById('voz-slot');
     if (!slot || slot.contains(ctrl.botao)) { pintar(); return; }
@@ -599,16 +607,44 @@ _PONTE_JS = """
     dizer: enviar,
     estado: () => ({ querendo: ctrl.querendo, rodando: ctrl.rodando, recado: ctrl.recado }),
   };
+
+  // Registrada aqui, a vigia é da página e vive enquanto a aba viver — nenhum
+  // rerun a alcança. (Enquanto ela morava no iframe, cada troca de iframe
+  // descartava o realm que a registrou e o botão ficava órfão.)
+  if (W.__acervoVozVigia) W.clearInterval(W.__acervoVozVigia);
+  W.__acervoVozVigia = W.setInterval(montar, 400);
   montar();
+})();
+"""
+
+# Roda dentro do iframe, e faz uma coisa só: pôr o controlador para rodar na
+# página. `script.textContent` executa de forma síncrona no append, então
+# `__acervoVoz` já existe na linha seguinte.
+_PONTE_JS = """
+<script>
+(function () {
+  const W = window.parent, D = W.document;
+  if (!W.__acervoVoz) {
+    const script = D.createElement('script');
+    script.id = 'acervo-voz-controlador';
+    script.textContent = __CONTROLADOR__;
+    D.head.appendChild(script);
+  }
+  // A caixa "escuta contínua" mudou o script; esta é a única via de a mudança
+  // chegar até um controlador que já está de pé.
+  if (W.__acervoVoz) { W.__acervoVoz.modo(__CONTINUO__); W.__acervoVoz.montar(); }
 })();
 </script>
 """
 
 
 def _injetar_ponte() -> None:
+    controlador = _CONTROLADOR_JS.replace("__ATIVACOES__", json.dumps(list(cmd.ATIVACOES)))
     script = (
         _PONTE_JS
-        .replace("__ATIVACOES__", json.dumps(list(cmd.ATIVACOES)))
+        # json.dumps: o controlador vira um literal de string JS, e nenhum
+        # acento, aspa ou `\\u` dele precisa de escape manual
+        .replace("__CONTROLADOR__", json.dumps(controlador))
         .replace("__CONTINUO__", "true" if st.session_state.get(ESCUTA_CONTINUA) else "false")
     )
     # altura 1: o iframe é só um instalador de script, não tem o que mostrar;

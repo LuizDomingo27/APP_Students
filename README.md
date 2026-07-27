@@ -29,7 +29,10 @@ custa a busca que já estava ali.
 Os mesmos comandos funcionam digitados, então nada depende de ter microfone.
 O reconhecimento roda no navegador (Web Speech API, pt-BR): nenhum áudio sai
 da máquina e não há chave de API envolvida — em compensação, só Chrome e Edge
-reconhecem fala; nos demais, o campo de texto continua valendo.
+reconhecem fala; nos demais, o campo de texto continua valendo. No app
+publicado, abra-o na **própria aba**: embutido dentro de outra página (o
+painel do Streamlit Cloud, por exemplo) o navegador não libera o microfone —
+e o botão diz isso, em vez de ficar mudo.
 
 ## Stack
 
