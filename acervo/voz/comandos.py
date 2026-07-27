@@ -8,9 +8,21 @@ exercitado por `tests/unit/test_voz.py`, sem subir servidor nem microfone.
 Duas decisões que atravessam o arquivo, porque reconhecimento de fala erra e
 um erro aqui executa a ação errada:
 
-* **Vocabulário fechado.** Frase que não casa com nenhuma regra vira `None`,
-  e a interface diz "não entendi". Chutar a ação mais provável seria pior que
-  não fazer nada: quem depende de voz não tem como desfazer rápido.
+* **Nada acontece sem o nome.** O assistente atende por "Luiz" e ignora toda
+  frase que não o chame — em qualquer modo, inclusive digitando. É o que
+  torna seguro deixar o microfone aberto: a conversa da sala não vira
+  comando. "Luiz" sozinho não é comando nenhum, é uma saudação, e responder a
+  ela é a forma mais barata de a pessoa descobrir que foi ouvida.
+* **Vocabulário fechado para *agir*, aberto para *procurar*.** Nenhuma frase
+  desconhecida vira ação: `interpretar` devolve `None` em vez de chutar entre
+  navegar e limpar, porque quem depende de voz não desfaz rápido. Mas parar
+  aí faria o assistente recusar justamente o que o acervo tem de melhor — o
+  assunto. Então `interpretar_livre` manda a sobra para a busca, onde o pior
+  caso é uma lista vazia. As duas portas existem, e cada chamador escolhe.
+* **Pergunta falada não é palavra-chave.** "explique como fazer uma procedure
+  usando SQL Server" tem cinco palavras de estrutura e três de conteúdo; como
+  o full-text faz AND de tudo, mandar a frase inteira devolve zero mesmo com
+  o material no banco. `termo_de_busca` derruba a estrutura antes.
 * **Ação que tira algo exige frase longa.** "sair" sozinho aparece em qualquer
   conversa perto do microfone; encerrar sessão só acontece com "encerrar
   sessão" ou "sair do sistema".
@@ -42,6 +54,7 @@ ABRIR = "abrir"
 TROCAR_SENHA = "trocar_senha"
 SAIR = "sair"
 AJUDA = "ajuda"
+SAUDACAO = "saudacao"      # chamaram o nome e não pediram nada
 
 # Páginas, escritas exatamente como a navbar as rotula (`app.componentes`).
 PAGINA_BUSCA = "Busca"
@@ -55,9 +68,20 @@ MODO_CODIGO = "Código"
 PROXIMA = "proxima"
 ANTERIOR = "anterior"
 
-# Em escuta contínua o microfone ouve a sala inteira; sem uma palavra que
-# abre o turno, qualquer frase dita por perto viraria comando.
-ATIVACOES = ("assistente", "computador", "acervo")
+# O assistente atende pelo nome, e **só** pelo nome: nenhuma frase vira ação
+# sem "Luiz" na frente. Isso é o que permite deixar o microfone aberto perto
+# de uma conversa — o custo é ter que chamar sempre, inclusive apertando o
+# botão. As variantes são o que o reconhecimento devolve na prática para o
+# mesmo nome falado ("Luís", "Luiza", "Lui"); recusar por causa da grafia
+# escolhida pelo navegador seria recusar por um detalhe que ninguém controla.
+ATIVACOES = ("luiz", "luis", "luiza", "luisa", "lui", "ruiz")
+
+# A resposta de quando chamam o nome e não pedem nada. Fica aqui, junto da
+# gramática, porque é a outra ponta da mesma conversa.
+SAUDACAO_RESPOSTA = (
+    "Oi, em que posso lhe ajudar? Pode me perguntar tudo que quiser sobre o meu "
+    "My Brain My Friend — se estiver contido nele, eu te ajudarei. Pode perguntar."
+)
 
 
 @dataclass(frozen=True)
@@ -145,6 +169,48 @@ _NUMEROS = {
 
 _PONTUACAO = ".,;:!?…\"'“”‘’()[]{}«»·•"
 
+# ------------------------------------------------- perguntas em voz natural
+# Ninguém fala com o acervo em palavras-chave. Fala "explique como fazer uma
+# procedure usando SQL Server" — e é aí que o full-text morre: a busca faz
+# **AND** de todos os termos, então "explic & faz & procedure & sql & server"
+# não casa com nada, mesmo o acervo tendo o material sobre procedure. A
+# estrutura da pergunta precisa cair antes de virar termo de busca.
+
+_ABERTURAS_DE_PERGUNTA = (
+    "explique", "explica", "explicar", "explique-me", "me explique", "me explica",
+    "ensine", "ensina", "ensinar", "me ensine", "me ensina", "como", "como e",
+    "como que", "como faco", "como se", "o que e", "o que sao", "o que",
+    "que e", "qual e", "qual", "quais", "quais sao", "para que serve",
+    "pra que serve", "para que", "pra que", "quero saber", "quero entender",
+    "quero aprender", "queria saber", "gostaria de saber", "preciso saber",
+    "preciso entender", "me fale sobre", "fale sobre", "me diga", "diferenca entre",
+    "exemplo de", "exemplos de", "um exemplo de", "me de um exemplo de",
+)
+
+# Palavras que só amarram a frase e nunca aparecem no material indexado. Sair
+# fora é de propósito: com AND, sobrar termo demais devolve zero resultados,
+# e errar para o lado de buscar demais é recuperável — errar para o lado de
+# não achar nada parece que o acervo não tem o assunto.
+_RUIDO_DE_PERGUNTA = frozenset((
+    "explique", "explica", "explicar", "explicame", "explicacao",
+    "ensine", "ensina", "ensinar", "mostre", "mostra", "mostrar",
+    "diga", "dizer", "fale", "falar", "conte", "contar", "me", "mim", "eu",
+    "quero", "queria", "gostaria", "preciso", "saber", "entender", "aprender",
+    "ver", "veja", "vejo", "favor", "pode", "poderia", "ajuda", "ajudar",
+    "como", "oque", "que", "qual", "quais", "quando", "onde", "porque", "pq",
+    "fazer", "faz", "faco", "fazemos", "feito", "criar", "cria", "crio",
+    "usar", "usando", "uso", "usa", "utilizar", "utilizando", "utiliza",
+    "funciona", "funcionam", "serve", "servem", "e", "sao", "ser", "esta",
+    "sobre", "jeito", "forma", "maneira", "exemplo", "exemplos",
+    "tem", "ter", "isso", "isto", "aquilo", "algum", "alguma", "melhor",
+    "com", "sem", "entre", "diferenca", "vez", "caso",
+    # vícios de fala que o reconhecimento transcreve fielmente e que nunca são
+    # assunto. "tipo" e "agora" ficam de fora: no acervo, "tipo de dado" e
+    # "janela agora" são conteúdo de verdade.
+    "entao", "ne", "ah", "eh", "hum", "olha", "pois", "mas", "ai", "opa",
+    "oi", "ola", "bom", "dia", "boa", "tarde", "noite",
+))
+
 
 # ------------------------------------------------------------ normalização
 
@@ -209,33 +275,96 @@ def _numero(token: str) -> Optional[int]:
 
 # -------------------------------------------------------------- ativação
 
-def tem_ativacao(frase: str) -> bool:
-    """True quando a frase começa por "assistente", "computador"…
+_CUMPRIMENTOS = ("ok", "ei", "oi", "ola", "hey", "opa", "e", "bom", "boa", "dia",
+                 "tarde", "noite", "fala")
+_CORTESIAS = ("por", "favor", "pode", "poderia", "me", "faz", "faca")
 
-    Só a escuta contínua exige isso; no modo aperta-e-fala a pessoa já
-    declarou a intenção ao acionar o microfone.
+
+def _pular_chamado(normalizados: Sequence[str]) -> Optional[int]:
+    """Quantos tokens do início são só o chamado, ou `None` se não chamaram.
+
+    Uma função só para as duas perguntas ("chamaram?" e "onde começa o
+    comando?") porque quando eram duas elas discordavam: "oi Luiz, próxima
+    página" era reconhecida como chamado e mesmo assim entrava nas regras com
+    o "oi Luiz" ainda na frente, virando busca pelo nome.
     """
-    tokens, _ = _tokenizar(frase)
-    tokens = _sem_enfeite(tokens)
-    if tokens and tokens[0] in ("ok", "ei", "oi", "hey"):
-        tokens = tokens[1:]
-    return bool(tokens) and tokens[0] in ATIVACOES
+    corte = 0
+    while corte < len(normalizados) and (
+        normalizados[corte] in _CUMPRIMENTOS or normalizados[corte] in _ARTIGOS
+    ):
+        corte += 1
+    if corte >= len(normalizados) or normalizados[corte] not in ATIVACOES:
+        return None
+    corte += 1
+    # "Luiz, por favor busca X" — a cortesia não faz parte do comando
+    while corte < len(normalizados) and normalizados[corte] in _CORTESIAS:
+        corte += 1
+    return corte
+
+
+def tem_ativacao(frase: str) -> bool:
+    """True quando chamaram o assistente pelo nome.
+
+    É o portão de tudo: sem o nome, nenhuma frase vira ação. É o que permite
+    deixar o microfone aberto perto de uma conversa sem que a conversa
+    execute comandos.
+    """
+    normalizados, _ = _tokenizar(frase)
+    return _pular_chamado(normalizados) is not None
 
 
 def _tirar_ativacao(
     normalizados: Sequence[str], originais: Sequence[str],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    corte = 0
-    if corte < len(normalizados) and normalizados[corte] in ("ok", "ei", "oi", "hey"):
-        corte += 1
-    if corte < len(normalizados) and normalizados[corte] in ATIVACOES:
-        corte += 1
-    else:
+    corte = _pular_chamado(normalizados)
+    if corte is None:
         return tuple(normalizados), tuple(originais)
-    # "assistente, por favor buscar X" — a cortesia não faz parte do comando
-    while corte < len(normalizados) and normalizados[corte] in ("por", "favor", "pode", "poderia"):
-        corte += 1
     return tuple(normalizados[corte:]), tuple(originais[corte:])
+
+
+# -------------------------------------------------- da pergunta para o termo
+
+def _filtrar_ruido(
+    normalizados: Sequence[str], originais: Sequence[str],
+) -> tuple[str, ...]:
+    """Só o que tem chance de estar no acervo — nos originais, com acento.
+
+    Devolve tupla vazia quando a frase inteira era estrutura ("me explica
+    isso aí"): sem nenhum termo de conteúdo, buscar seria buscar por nada.
+    """
+    return tuple(
+        original
+        for norma, original in zip(normalizados, originais)
+        if norma not in _RUIDO_DE_PERGUNTA and norma not in _ARTIGOS
+    )
+
+
+def termo_de_busca(frase: str) -> str:
+    """A pergunta falada vira o termo que o Postgres tem chance de achar.
+
+        "explique como fazer uma procedure usando SQL Server" -> "procedure SQL Server"
+        "como fazer um group by usando pandas"                -> "group by pandas"
+
+    Preserva acento e caixa do original: o índice acha os dois, mas quem lê a
+    caixa de busca lê um só. Devolve "" quando não sobra conteúdo nenhum.
+    """
+    normalizados, originais = _tokenizar(frase or "")
+    normalizados, originais = _tirar_ativacao(normalizados, originais)
+    return " ".join(_filtrar_ruido(normalizados, originais))
+
+
+def termos_essenciais(termo: str) -> str:
+    """O mesmo termo sem as partículas curtas — a segunda tentativa da busca.
+
+    "group by pandas" não acha nada quando o material indexou `df.groupby`
+    como um token só: o "by" isolado nunca casa, e o AND do full-text derruba
+    a frase inteira por causa dele. Descartar o que tem menos de três letras
+    devolve "group pandas", que acha. Vale como *fallback*, nunca como
+    primeira tentativa — em "left join on" as partículas são o assunto.
+    """
+    normalizados, originais = _tokenizar(termo or "")
+    longos = tuple(o for n, o in zip(normalizados, originais) if len(n) >= 3)
+    return " ".join(longos) if longos else ""
 
 
 # ----------------------------------------------------------------- regras
@@ -424,6 +553,27 @@ def _regra_filtro(norm: Sequence[str], orig: Sequence[str]) -> Optional[Comando]
     return None
 
 
+def _regra_pergunta(norm: Sequence[str], orig: Sequence[str]) -> Optional[Comando]:
+    """"explique como fazer uma procedure em SQL Server" -> busca por "procedure SQL Server".
+
+    Vem antes da navegação de propósito: "o que é um dashboard" é uma pergunta
+    sobre o assunto, não um pedido para abrir a página Dashboard. A navegação
+    continua ganhando quando a frase é só o nome da página ("dashboard").
+    """
+    # nos tokens crus *e* sem os artigos: "para que serve" começa por uma
+    # palavra que `_sem_enfeite` descarta, e "o que é" começa por outra que ele
+    # precisa descartar — nenhuma das duas casa nas duas formas
+    if all(
+        _casar_prefixo(tokens, _ABERTURAS_DE_PERGUNTA) is None
+        for tokens in (norm, _sem_enfeite(norm))
+    ):
+        return None
+    termo = " ".join(_filtrar_ruido(norm, orig))
+    if not termo:
+        return None
+    return Comando(BUSCAR, termo, f"Buscando “{termo}”")
+
+
 def _regra_navegar(norm: Sequence[str], _orig: Sequence[str]) -> Optional[Comando]:
     tokens = _sem_enfeite(norm)
     gatilho = _casar_prefixo(tokens, _VERBOS_NAVEGAR)
@@ -472,6 +622,7 @@ _REGRAS = (
     _regra_modo,
     _regra_abrir,
     _regra_filtro,
+    _regra_pergunta,
     _regra_navegar,
     _regra_buscar,
 )
@@ -480,19 +631,43 @@ _REGRAS = (
 def interpretar(frase: str) -> Optional[Comando]:
     """A frase falada vira um `Comando`, ou `None` se não for reconhecida.
 
-    A palavra de ativação é opcional aqui: quem exige (escuta contínua) filtra
-    antes com `tem_ativacao`. Assim a mesma gramática serve aos dois modos.
+    O nome é descartado antes das regras — "Luiz, próxima página" e "próxima
+    página" chegam iguais aqui. Quem exige o nome é `app.voz`, com
+    `tem_ativacao`; esta camada só precisa saber que ele não faz parte do
+    comando. A exceção é o nome sozinho, que já é a mensagem inteira.
     """
     normalizados, originais = _tokenizar(frase or "")
+    chamaram = _pular_chamado(normalizados) is not None
     normalizados, originais = _tirar_ativacao(normalizados, originais)
     if not normalizados:
-        return None
+        return Comando(SAUDACAO, descricao=SAUDACAO_RESPOSTA) if chamaram else None
 
     for regra in _REGRAS:
         comando = regra(normalizados, originais)
         if comando is not None:
             return comando
     return None
+
+
+def interpretar_livre(frase: str) -> Optional[Comando]:
+    """`interpretar`, e o que sobrar vira busca no acervo.
+
+    A diferença é o que acontece com a frase desconhecida. `interpretar`
+    devolve `None` — certo para quem pilota a interface, porque executar a
+    ação errada é pior que não executar. Aqui a sobra vira um `BUSCAR`: no
+    acervo, "frase que não é comando" quase sempre é assunto, e o pior caso
+    de buscar demais é uma lista vazia, que se desfaz sozinha na próxima
+    frase. Quem chama valida o termo contra o banco antes de trocar a tela.
+
+    Devolve `None` só quando não sobra termo nenhum ("é, então…").
+    """
+    comando = interpretar(frase)
+    if comando is not None:
+        return comando
+    termo = termo_de_busca(frase)
+    if not termo:
+        return None
+    return Comando(BUSCAR, termo, f"Buscando “{termo}”")
 
 
 # -------------------------------------------------- casar com o que existe
@@ -549,33 +724,41 @@ def escolher_opcao(falado: str, opcoes: Sequence[str]) -> Optional[str]:
 # vermelho, não instrução mentirosa na tela.
 
 EXEMPLOS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Chamar", (
+        "Luiz",
+        "oi Luiz",
+    )),
+    ("Perguntar", (
+        "Luiz, como fazer um group by usando pandas",
+        "Luiz, explique como criar uma procedure em SQL Server",
+        "Luiz, o que é uma janela de tempo",
+    )),
     ("Navegar", (
-        "ir para o dashboard",
-        "abrir adicionar",
-        "voltar para a busca",
-        "usuários",
+        "Luiz, ir para o dashboard",
+        "Luiz, abrir adicionar",
+        "Luiz, voltar para a busca",
     )),
     ("Buscar", (
-        "buscar regressão linear",
-        "procurar por LEFT JOIN",
-        "limpar a busca",
+        "Luiz, buscar regressão linear",
+        "Luiz, procurar por LEFT JOIN",
+        "Luiz, limpar a busca",
     )),
     ("Modo de busca", (
-        "modo código",
-        "modo texto",
+        "Luiz, modo código",
+        "Luiz, modo texto",
     )),
     ("Filtrar", (
-        "categoria Databricks",
-        "linguagem python",
-        "limpar filtros",
+        "Luiz, categoria Databricks",
+        "Luiz, linguagem python",
+        "Luiz, limpar filtros",
     )),
     ("Resultados", (
-        "próxima página",
-        "página anterior",
-        "abrir o segundo resultado",
+        "Luiz, próxima página",
+        "Luiz, página anterior",
+        "Luiz, abrir o segundo resultado",
     )),
     ("Conta", (
-        "trocar minha senha",
-        "encerrar sessão",
+        "Luiz, trocar minha senha",
+        "Luiz, encerrar sessão",
     )),
 )

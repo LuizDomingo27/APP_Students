@@ -11,12 +11,24 @@ conteúdos — atrás de login, com cadastro aprovado por um administrador.
 > novo entra pela página **Adicionar** do app (ou, para lotes grandes em
 > pastas, pelo `scripts/indexar.py`).
 
-O app também é operável **por voz**: a barra do assistente aceita comandos
-falados ("ir para o dashboard", "buscar regressão linear", "modo código",
-"próxima página", "abrir o segundo resultado") e faz o que o clique faria. Os
-mesmos comandos funcionam digitados, então nada depende de ter microfone. O
-reconhecimento roda no navegador (Web Speech API, pt-BR): nenhum áudio sai da
-máquina e não há chave de API envolvida — em compensação, só Chrome e Edge
+O app também é operável **por voz**, e o assistente atende por **"Luiz"**:
+toda frase começa pelo nome, senão nada acontece — é o que permite deixar o
+microfone aberto sem que a conversa em volta navegue pelo app. "Luiz" sozinho
+é um cumprimento; com um comando atrás ("Luiz, ir para o dashboard", "Luiz,
+modo código", "Luiz, próxima página", "Luiz, abrir o segundo resultado") ele
+faz o que o clique faria.
+
+O que **não** é um comando vira pergunta ao acervo, com as palavras que você
+usaria falando: *"Luiz, explique como criar uma procedure no SQL Server"* ou
+*"Luiz, como fazer um group by usando pandas"*. A estrutura da pergunta é
+descartada antes da busca (o full-text exige *todos* os termos, e "explique"
+e "fazer" não estão em lugar nenhum do material), e o assistente confirma no
+banco que há resultado **antes** de trocar a tela — errar a transcrição não
+custa a busca que já estava ali.
+
+Os mesmos comandos funcionam digitados, então nada depende de ter microfone.
+O reconhecimento roda no navegador (Web Speech API, pt-BR): nenhum áudio sai
+da máquina e não há chave de API envolvida — em compensação, só Chrome e Edge
 reconhecem fala; nos demais, o campo de texto continua valendo.
 
 ## Stack

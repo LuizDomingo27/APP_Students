@@ -174,11 +174,33 @@ que ele decide é outra.
 descricao)`. É uma camada pura: não conhece Streamlit, microfone nem banco —
 recebe texto e devolve *o que fazer*.
 
-O vocabulário é **fechado**: frase que não casa com nenhuma regra vira `None`,
-e a interface responde "não entendi". Chutar a ação mais provável seria pior
-que não fazer nada, porque quem depende de voz não tem como desfazer rápido.
-Pela mesma razão, encerrar sessão exige frase inteira ("encerrar sessão"), não
-a palavra "sair" — que aparece em qualquer conversa perto do microfone.
+**Nada acontece sem o nome.** O assistente atende por "Luiz" (`ATIVACOES`, com
+as variantes que o reconhecimento devolve para o mesmo nome falado — "Luís",
+"Luiza", "Ruiz"), e `tem_ativacao` é o portão de tudo: falado ou digitado. É
+o que torna seguro deixar o microfone aberto perto de uma conversa. O nome
+sozinho não é comando nenhum: é uma saudação (`SAUDACAO`), e responder a ela é
+a forma mais barata de a pessoa descobrir que foi ouvida.
+
+O vocabulário é **fechado para agir e aberto para procurar**, e são duas
+funções distintas:
+
+- `interpretar()` devolve `None` para o que não casa com nenhuma regra. Chutar
+  entre navegar e limpar seria pior que não fazer nada, porque quem depende de
+  voz não desfaz rápido. Pela mesma razão, encerrar sessão exige frase inteira
+  ("encerrar sessão"), não "sair" — que aparece em qualquer conversa.
+- `interpretar_livre()` manda a sobra para a busca. Parar em "não entendi"
+  faria o assistente recusar justamente o que o acervo tem de melhor: o
+  assunto. O pior caso de buscar demais é uma lista vazia, que a frase
+  seguinte desfaz.
+
+`termo_de_busca()` é o que faz a segunda porta valer alguma coisa. A busca
+full-text exige **todos** os termos (`websearch_to_tsquery` faz AND), então
+"explique como fazer uma procedure usando SQL Server" viraria `explic & faz &
+procedure & sql & server` e não acharia nada — mesmo o acervo tendo o
+material. A estrutura da pergunta cai antes (`_RUIDO_DE_PERGUNTA`) e sobra
+"procedure SQL Server". `termos_essenciais()` é a segunda tentativa, sem as
+partículas curtas: resgata "group by pandas", que morre por causa do "by"
+quando o material indexou `df.groupby` como um token só.
 
 `escolher_opcao()` casa o que foi dito com uma opção que existe de verdade
 ("databriks" → "Databricks · Módulo 1"), numa escada que vai do exato ao
@@ -269,15 +291,34 @@ microfone (Web Speech API, no navegador)
   → controlador JS injetado na página principal
   → campo de texto do Streamlit  ──── (também aceita digitação)
   → callback guarda em `voz_pendente`
-  → rerun → processar_pendente() interpreta e executa
+  → rerun → chamou "Luiz"? senão para aqui
+  → interpretar_livre(): comando, ou busca pelo assunto
+  → executa escrevendo no `session_state`
 ```
 
-Dois detalhes que parecem gambiarra e não são:
+**A busca por voz confirma no banco antes de trocar a tela.** `_fazer_buscar`
+conta os resultados (`LIMIT 1`, só o total da janela) e só então escreve o
+termo. Trocar a tela para mostrar "nenhum resultado" custaria a busca que a
+pessoa já tinha, e errar a transcrição é comum demais para esse preço. A
+escada tem três degraus: o termo limpo; os termos essenciais; e, se havia
+filtro ligado, a busca sem filtro nenhum — aí a pergunta ganha do filtro,
+porque foi ela que a pessoa acabou de fazer.
 
-- **O controlador vive na página, não no iframe.** `st.iframe` cria um iframe
-  novo a cada rerun; um reconhecimento de fala que morasse lá dentro morreria
-  a cada comando executado. O iframe é só um instalador — nas vezes seguintes
-  apenas reencaixa o botão no lugar que o Streamlit acabou de redesenhar.
+Três detalhes que parecem gambiarra e não são:
+
+- **O controlador vive na página, não no iframe.** `st.iframe` pode trocar o
+  iframe a cada rerun; um reconhecimento de fala que morasse lá dentro
+  morreria a cada comando executado. O iframe é só um instalador.
+- **Uma vigia de 400 ms reencaixa o botão**, em vez de o iframe reencaixá-lo
+  ao reexecutar. Foi o conserto de um travamento real: o Streamlit redesenha
+  o slot e leva o botão junto, mas *não* reexecuta o iframe de forma
+  confiável — e quando ele é trocado, o realm antigo é descartado, o que mata
+  os timers registrados por ele (embora `window.__acervoVoz` continue
+  chamável, porque a página guarda a referência). Por isso a vigia é rearmada
+  no topo do script, em toda execução: a que está no ar é sempre a do iframe
+  vivo. Pelo mesmo motivo o reconhecimento é recriado a cada `iniciar()` — o
+  `SpeechRecognition` do Chrome fica inutilizável depois de certos erros — e
+  o estado real vem de `onstart`/`onend`, não da nossa intenção.
 - **O campo de texto no meio do caminho** é a única via de um script do
   navegador devolver texto ao Python sem construir um componente React com
   build próprio. Ele é também a interface de reserva: os mesmos comandos

@@ -183,28 +183,100 @@ def test_sair_exige_frase_inteira():
 # ---------------------------------------------------------------- ativação
 
 @pytest.mark.parametrize("frase", [
-    "assistente, ir para o dashboard",
-    "ok assistente buscar regressão",
-    "computador próxima página",
+    "Luiz, ir para o dashboard",
+    "oi Luiz, buscar regressão",
+    "Luís próxima página",
+    "ok Luiz, modo código",
 ])
-def test_palavra_de_ativacao_e_reconhecida_e_descartada(frase):
+def test_o_nome_e_reconhecido_e_descartado_antes_das_regras(frase):
     assert cmd.tem_ativacao(frase) is True
     assert interpretar(frase) is not None
 
 
-def test_ativacao_com_cortesia_no_meio():
-    assert _acao("assistente, por favor abrir o dashboard") == (
+def test_variantes_que_o_reconhecimento_devolve_para_o_mesmo_nome():
+    """"Luís", "Luiza", "Ruiz" — a grafia é escolha do navegador, não da pessoa."""
+    for variante in ("Luiz", "Luís", "Luiza", "Ruiz", "lui"):
+        assert cmd.tem_ativacao(f"{variante}, próxima página") is True
+
+
+def test_cortesia_entre_o_nome_e_o_comando():
+    assert _acao("Luiz, por favor abrir o dashboard") == (
         cmd.NAVEGAR, cmd.PAGINA_DASHBOARD
+    )
+    assert _acao("oi Luiz, me faz uma busca por regressão") == (
+        cmd.BUSCAR, "regressão"
     )
 
 
-def test_frase_sem_ativacao():
+def test_frase_sem_o_nome():
     assert cmd.tem_ativacao("ir para o dashboard") is False
     assert cmd.tem_ativacao("") is False
+    assert cmd.tem_ativacao("o assistente já foi") is False
 
 
-def test_ativacao_sozinha_nao_e_comando():
-    assert interpretar("assistente") is None
+def test_o_nome_sozinho_e_uma_saudacao_nao_um_comando():
+    for chamado in ("Luiz", "oi Luiz", "olá Luiz", "Luiz?"):
+        comando = interpretar(chamado)
+        assert comando is not None and comando.acao == cmd.SAUDACAO
+        assert comando.descricao == cmd.SAUDACAO_RESPOSTA
+
+
+# ------------------------------------------------- perguntas em voz natural
+
+@pytest.mark.parametrize("frase,termo", [
+    ("explique como fazer uma procedure usando SQL Server", "procedure SQL Server"),
+    ("como fazer um group by usando pandas", "group by pandas"),
+    ("o que é uma janela de tempo", "janela tempo"),
+    ("me explica o que é regressão linear", "regressão linear"),
+    ("para que serve o cross join", "cross join"),
+    ("exemplo de list comprehension em python", "list comprehension python"),
+])
+def test_pergunta_natural_vira_busca_pelo_conteudo(frase, termo):
+    """A estrutura da pergunta cai; o AND do full-text não sobrevive a ela."""
+    assert _acao(frase) == (cmd.BUSCAR, termo)
+
+
+def test_pergunta_preserva_acento_e_caixa_do_que_sobrou():
+    assert cmd.termo_de_busca("Luiz, explique o que é uma FUNÇÃO de janela") == (
+        "FUNÇÃO janela"
+    )
+
+
+def test_pergunta_que_e_so_estrutura_nao_vira_termo():
+    assert cmd.termo_de_busca("me explica isso aí então") == ""
+    assert cmd.termo_de_busca("") == ""
+
+
+def test_pergunta_nao_rouba_a_navegacao_pelo_nome_da_pagina():
+    """"dashboard" abre a página; "o que é um dashboard" é sobre o assunto."""
+    assert _acao("dashboard") == (cmd.NAVEGAR, cmd.PAGINA_DASHBOARD)
+    assert _acao("o que é um dashboard") == (cmd.BUSCAR, "dashboard")
+
+
+def test_termos_essenciais_derrubam_as_particulas_curtas():
+    """Segunda tentativa da busca: "by" isolado nunca casa com `df.groupby`."""
+    assert cmd.termos_essenciais("group by pandas") == "group pandas"
+    assert cmd.termos_essenciais("regressão linear") == "regressão linear"
+    assert cmd.termos_essenciais("") == ""
+
+
+# ------------------------------------------------------- vocabulário aberto
+
+def test_interpretar_livre_manda_o_desconhecido_para_a_busca():
+    assert interpretar("materialized view no postgres") is None
+    comando = cmd.interpretar_livre("materialized view no postgres")
+    assert (comando.acao, comando.valor) == (cmd.BUSCAR, "materialized view postgres")
+
+
+def test_interpretar_livre_nao_atropela_os_comandos():
+    """Vocabulário aberto vale para o que sobra, não para o que já é comando."""
+    for frase in ("próxima página", "modo código", "limpar tudo", "encerrar sessão"):
+        assert cmd.interpretar_livre(frase) == interpretar(frase)
+
+
+def test_interpretar_livre_sem_conteudo_nenhum_desiste():
+    assert cmd.interpretar_livre("é então né") is None
+    assert cmd.interpretar_livre("") is None
 
 
 # ------------------------------------------------------- o que não entendi

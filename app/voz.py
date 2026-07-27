@@ -20,7 +20,21 @@ widget é instanciado, escrever na chave dele já não muda a tela desta rodada.
       → controlador JS injetado na página                  [_PONTE_JS]
       → campo de texto do Streamlit                        [painel]
       → callback `_receber` guarda em `voz_pendente`
-      → rerun → `processar_pendente` interpreta e executa  [_executar]
+      → rerun → chamou "Luiz"? senão para aqui             [processar_pendente]
+      → `interpretar_livre`: comando, ou busca pelo assunto
+      → executa escrevendo no `session_state`              [_executar]
+
+## Duas coisas que a barra promete e o resto do módulo cumpre
+
+**Só responde pelo nome.** Nenhuma frase vira ação sem "Luiz" na frente,
+falada ou digitada. É o que permite deixar o microfone aberto numa sala com
+gente conversando sem que a conversa navegue pelo app.
+
+**Pergunta desconhecida vira busca, mas só depois de o banco confirmar.**
+O acervo é grande e o vocabulário de comandos é pequeno; recusar tudo que
+não é comando desperdiçaria o conteúdo. Então a sobra vira termo de busca —
+e `_fazer_buscar` conta os resultados *antes* de trocar a tela, porque trocar
+para mostrar "nenhum resultado" custa a busca que a pessoa já tinha.
 
 O campo de texto no meio não é gambiarra: é a única via oficial de um script
 do navegador devolver texto para o Python sem construir um componente React
@@ -36,6 +50,8 @@ um instalador: ele injeta o controlador na página principal, onde `window`
 sobrevive aos reruns, e nas vezes seguintes apenas reencaixa o botão no lugar
 que o Streamlit acabou de redesenhar.
 """
+import html
+import json
 from typing import Optional
 
 import streamlit as st
@@ -105,11 +121,80 @@ def _fazer_navegar(comando: cmd.Comando, eh_admin: bool) -> tuple[str, str]:
     return "ok", comando.descricao
 
 
+_MODOS_SERVICO = {cmd.MODO_TEXTO: "texto", cmd.MODO_CODIGO: "codigo"}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _contar(termo, modo, categoria_id, linguagem, arquivo_caminho) -> int:
+    """Quantos blocos esse termo acha — `LIMIT 1`, só o total da janela."""
+    try:
+        return busca_service.buscar(
+            termo, modo=modo, categoria_id=categoria_id, linguagem=linguagem,
+            arquivo_caminho=arquivo_caminho, pagina=1, limite=1,
+        ).total
+    except BuscaError:
+        return 0
+
+
+def _filtros_ativos() -> tuple[Optional[int], Optional[str], Optional[str]]:
+    """(categoria_id, linguagem, arquivo) como a página de busca os aplicaria."""
+    rotulos = _rotulos_de_categoria()
+    categoria_id = rotulos.get(st.session_state.get(_CATEGORIA, comp.FILTRO_TODAS))
+    linguagem = st.session_state.get(_LINGUAGEM, comp.FILTRO_TODAS)
+    conteudo = st.session_state.get(_CONTEUDO, comp.FILTRO_TODO_CONTEUDO)
+    caminho = comp.rotulos_de_conteudo(_conteudos(categoria_id)).get(conteudo)
+    return (
+        categoria_id,
+        None if linguagem == comp.FILTRO_TODAS else linguagem,
+        caminho,
+    )
+
+
 def _fazer_buscar(comando: cmd.Comando) -> tuple[str, str]:
+    """Só troca a tela depois de o banco confirmar que há o que mostrar.
+
+    Perguntar por voz é barato e errar a transcrição é comum; jogar fora a
+    busca que estava na tela para mostrar "nenhum resultado" pune quem
+    perguntou. Então a ordem é: conta primeiro, navega depois.
+
+    A escada tem dois degraus, e os dois existem por um motivo observado:
+    o termo essencial (sem as partículas curtas) resgata "group by pandas",
+    que o AND do full-text derruba por causa do "by"; e a busca sem filtros
+    resgata a pergunta feita com um filtro antigo ainda ligado na tela — aí
+    a pergunta ganha do filtro, porque foi ela que a pessoa acabou de fazer.
+    """
+    modo = _MODOS_SERVICO.get(st.session_state.get(_MODO, cmd.MODO_TEXTO), "texto")
+    termos = [comando.valor]
+    essenciais = cmd.termos_essenciais(comando.valor)
+    if essenciais and essenciais != comando.valor:
+        termos.append(essenciais)
+
+    try:
+        filtros = _filtros_ativos()
+    except BuscaError:
+        filtros = (None, None, None)
+
+    for termo in termos:
+        total = _contar(termo, modo, *filtros)
+        if total:
+            return _mostrar_busca(termo, total, "")
+
+    if any(filtros):
+        for termo in termos:
+            total = _contar(termo, modo, None, None, None)
+            if total:
+                _zerar_filtros()
+                return _mostrar_busca(termo, total, " (removi os filtros)")
+
+    return "aviso", f"Não achei nada sobre “{comando.valor}” no acervo."
+
+
+def _mostrar_busca(termo: str, total: int, nota: str) -> tuple[str, str]:
     _ir_para(cmd.PAGINA_BUSCA)
-    st.session_state[_TERMO] = comando.valor
+    st.session_state[_TERMO] = termo
     st.session_state[_PAGINA] = 1
-    return "ok", comando.descricao
+    plural = "resultado" if total == 1 else "resultados"
+    return "ok", f"{total} {plural} para “{termo}”{nota}"
 
 
 def _fazer_filtro(comando: cmd.Comando) -> tuple[str, str]:
@@ -151,14 +236,18 @@ def _fazer_filtro(comando: cmd.Comando) -> tuple[str, str]:
         return "erro", f"Não consegui ler os filtros: {e}"
 
 
+def _zerar_filtros() -> None:
+    st.session_state[_CATEGORIA] = comp.FILTRO_TODAS
+    st.session_state[_CONTEUDO] = comp.FILTRO_TODO_CONTEUDO
+    st.session_state[_LINGUAGEM] = comp.FILTRO_TODAS
+
+
 def _fazer_limpar(acao: str) -> tuple[str, str]:
     if acao in (cmd.LIMPAR_BUSCA, cmd.LIMPAR_TUDO):
         st.session_state[_TERMO] = ""
         st.session_state[_PAGINA] = 1
     if acao in (cmd.LIMPAR_FILTROS, cmd.LIMPAR_TUDO):
-        st.session_state[_CATEGORIA] = comp.FILTRO_TODAS
-        st.session_state[_CONTEUDO] = comp.FILTRO_TODO_CONTEUDO
-        st.session_state[_LINGUAGEM] = comp.FILTRO_TODAS
+        _zerar_filtros()
     _ir_para(cmd.PAGINA_BUSCA)
     return "ok", {
         cmd.LIMPAR_BUSCA: "Busca limpa",
@@ -230,6 +319,8 @@ def _executar(comando: cmd.Comando, *, eh_admin: bool) -> tuple[str, str]:
     if acao == cmd.TROCAR_SENHA:
         st.session_state[_CONTA] = True
         return "ok", comando.descricao
+    if acao == cmd.SAUDACAO:
+        return "saudacao", comando.descricao
     if acao == cmd.AJUDA:
         return "ajuda", comando.descricao
     if acao == cmd.SAIR:
@@ -255,16 +346,26 @@ def _receber() -> None:
 
 
 def processar_pendente(*, eh_admin: bool) -> None:
-    """Executa a frase que chegou. Chamar no topo do run, antes dos widgets."""
+    """Executa a frase que chegou. Chamar no topo do run, antes dos widgets.
+
+    O portão do nome é aqui, e vale para tudo — falado ou digitado. Uniforme
+    de propósito: "o assistente só responde quando chamam por ele" é uma
+    regra que a pessoa aprende uma vez, e uma exceção para o teclado só
+    serviria para tornar o comportamento difícil de prever.
+    """
     frase = st.session_state.pop(PENDENTE, None)
     if not frase:
         return
 
-    comando = cmd.interpretar(frase)
-    if comando is None:
+    if not cmd.tem_ativacao(frase):
         st.session_state[ULTIMO] = (
-            "aviso", f"Não entendi “{frase}”. Diga “ajuda” para ver os comandos."
+            "aviso", f"Chame pelo nome primeiro — “Luiz, {frase}”."
         )
+        return
+
+    comando = cmd.interpretar_livre(frase)
+    if comando is None:
+        st.session_state[ULTIMO] = ("saudacao", cmd.SAUDACAO_RESPOSTA)
         return
 
     nivel, mensagem = _executar(comando, eh_admin=eh_admin)
@@ -286,11 +387,26 @@ _PONTE_JS = """
   const W = window.parent, D = W.document;
   const ATIVACOES = __ATIVACOES__;
 
-  if (W.__acervoVoz) { W.__acervoVoz.montar(); return; }
+  // A vigia é rearmada em toda execução, e antes de tudo. Quando o Streamlit
+  // troca o iframe, o realm que registrou o intervalo anterior é descartado:
+  // o `__acervoVoz` continua chamável (a página guarda a referência), mas os
+  // timers dele morrem em silêncio. Rearmar aqui é o que garante que sempre
+  // exista uma vigia viva — a do iframe que está no ar agora.
+  if (W.__acervoVozVigia) W.clearInterval(W.__acervoVozVigia);
+  W.__acervoVozVigia = W.setInterval(
+    () => { if (W.__acervoVoz) W.__acervoVoz.montar(); }, 400);
+
+  // Reexecução do iframe: o controlador já existe e não pode ser recriado —
+  // só recebe o modo atual, porque a caixa "escuta contínua" mudou o script
+  // e é esta a única via de a mudança chegar até ele.
+  if (W.__acervoVoz) { W.__acervoVoz.modo(__CONTINUO__); W.__acervoVoz.montar(); return; }
 
   const Fala = W.SpeechRecognition || W.webkitSpeechRecognition;
   const ctrl = {
-    ligado: false,
+    querendo: false,   // o que a pessoa pediu (botão ligado)
+    rodando: false,    // o que o reconhecimento está fazendo de verdade
+    partindo: false,   // start() chamado, onstart ainda não veio
+    recado: '',
     continuo: __CONTINUO__,
     rec: null,
     botao: null,
@@ -316,9 +432,14 @@ _PONTE_JS = """
   // Se um dia isto parar de funcionar (o Streamlit não promete esta via), o
   // sintoma é claro — o texto aparece no campo e nada acontece — e o campo
   // continua funcionando na digitação normal.
-  function enviar(texto) {
+  function enviar(texto, tentativa) {
     const alvo = campo();
-    if (!alvo) return;
+    if (!alvo) {
+      // rerun em andamento: o campo volta em instantes, e perder a frase aqui
+      // seria perder justamente a que a pessoa acabou de falar
+      if ((tentativa || 0) < 20) W.setTimeout(() => enviar(texto, (tentativa || 0) + 1), 100);
+      return;
+    }
     const setter = Object.getOwnPropertyDescriptor(
       W.HTMLInputElement.prototype, 'value').set;
     alvo.focus();
@@ -338,24 +459,37 @@ _PONTE_JS = """
   // por perto. Quem decide o que a frase significa continua sendo o Python.
   function chamaram(texto) {
     const limpo = texto.toLowerCase()
-      .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim()
-      .replace(/^(ok|ei|oi|hey)\\s+/, '');
-    return ATIVACOES.some(p => limpo.startsWith(p));
+      .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();
+    return ATIVACOES.some(nome => limpo.split(/[^a-z0-9]+/).slice(0, 3).includes(nome));
   }
 
   function pintar() {
     if (!ctrl.botao) return;
-    ctrl.botao.classList.toggle('ouvindo', ctrl.ligado);
-    ctrl.botao.textContent = ctrl.ligado ? '● Ouvindo' : '🎙 Falar';
-    ctrl.botao.title = ctrl.ligado ? 'Parar de ouvir' : 'Começar a ouvir';
-    if (ctrl.status) {
+    const ouvindo = ctrl.querendo;
+    ctrl.botao.classList.toggle('ouvindo', ouvindo);
+    ctrl.botao.textContent = ouvindo ? '● Ouvindo' : '🎙 Falar';
+    ctrl.botao.title = ouvindo ? 'Parar de ouvir' : 'Começar a ouvir';
+    if (ctrl.status && !ctrl.recado) {
       ctrl.status.textContent = !Fala
         ? 'Este navegador não reconhece fala — use o campo ao lado.'
-        : ctrl.ligado
-          ? (ctrl.continuo ? 'Diga “assistente…” antes do comando.' : 'Pode falar.')
-          : '';
+        : ouvindo ? 'Comece por “Luiz…”' : '';
     }
   }
+
+  // Um recado é o que a pessoa precisa fazer ("permissão negada"); fica na
+  // tela até a próxima ação, senão some antes de ser lido.
+  function recadar(texto) {
+    ctrl.recado = texto;
+    if (ctrl.status) ctrl.status.textContent = texto;
+    W.setTimeout(() => { if (ctrl.recado === texto) { ctrl.recado = ''; pintar(); } }, 6000);
+  }
+
+  const RECADOS = {
+    'not-allowed': 'Permissão de microfone negada — libere no cadeado da barra de endereço.',
+    'service-not-allowed': 'O navegador bloqueou o reconhecimento de fala.',
+    'audio-capture': 'Nenhum microfone encontrado.',
+    'network': 'Sem rede para o reconhecimento de fala.',
+  };
 
   function criarRec() {
     const rec = new Fala();
@@ -363,6 +497,16 @@ _PONTE_JS = """
     rec.continuous = ctrl.continuo;
     rec.interimResults = false;
     rec.maxAlternatives = 1;
+
+    // `rodando` vem do próprio reconhecimento, não da nossa intenção: era a
+    // dessincronia entre os dois que fazia o botão dizer "Ouvindo" com o
+    // microfone desligado, sem nada na tela explicando.
+    rec.onstart = () => { ctrl.rodando = true; ctrl.partindo = false; pintar(); };
+    rec.onend = () => {
+      ctrl.rodando = false;
+      ctrl.partindo = false;
+      if (ctrl.querendo) W.setTimeout(arrancar, 250); else pintar();
+    };
 
     rec.onresult = (ev) => {
       const r = ev.results[ev.results.length - 1];
@@ -373,67 +517,87 @@ _PONTE_JS = """
       enviar(texto);
       if (!ctrl.continuo) parar();
     };
-    // 'no-speech' e 'aborted' são o silêncio normal entre um comando e outro;
-    // só desligam o botão os erros que a pessoa precisa resolver.
+
     rec.onerror = (ev) => {
-      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
-        ctrl.ligado = false;
-        if (ctrl.status) ctrl.status.textContent = 'Permissão de microfone negada.';
-        pintar();
+      if (ev.error === 'aborted') return;              // nós mesmos paramos
+      if (ev.error === 'no-speech') {
+        if (!ctrl.continuo) { ctrl.querendo = false; recadar('Não ouvi nada — clique e fale.'); }
+        return;
       }
+      ctrl.querendo = false;
+      recadar(RECADOS[ev.error] || ('Falha no microfone: ' + ev.error));
     };
-    rec.onend = () => { if (ctrl.ligado) { try { rec.start(); } catch (e) {} } };
     return rec;
+  }
+
+  // Sempre um objeto novo: o SpeechRecognition do Chrome fica inutilizável
+  // depois de certos erros, e reaproveitá-lo era o que deixava o microfone
+  // morto sem nenhum sinal — clicava, e nada.
+  function arrancar() {
+    if (!ctrl.querendo || ctrl.rodando || ctrl.partindo) return;
+    ctrl.partindo = true;
+    ctrl.rec = criarRec();
+    try {
+      ctrl.rec.start();
+    } catch (err) {
+      ctrl.partindo = false;
+      // a sessão anterior ainda está encerrando; o onend dela chama de novo
+      if (err && err.name === 'InvalidStateError') return;
+      ctrl.querendo = false;
+      recadar('Não consegui abrir o microfone: ' + (err && err.message || err));
+    }
   }
 
   function iniciar() {
     if (!Fala) return;
-    ctrl.rec = ctrl.rec || criarRec();
-    ctrl.rec.continuous = ctrl.continuo;
-    ctrl.ligado = true;
-    try { ctrl.rec.start(); } catch (e) {}
+    ctrl.recado = '';
+    ctrl.querendo = true;
+    arrancar();
     pintar();
   }
 
   function parar() {
-    ctrl.ligado = false;
-    if (ctrl.rec) { try { ctrl.rec.stop(); } catch (e) {} }
+    ctrl.querendo = false;
+    if (ctrl.rec) { try { ctrl.rec.stop(); } catch (err) {} }
     pintar();
   }
 
-  // O Streamlit redesenha o slot a cada rerun; o botão é reencaixado nele,
-  // mas o reconhecimento (e o fato de estar ligado) nunca reinicia.
-  function montar(tentativa) {
+  // O Streamlit redesenha o slot a cada rerun e leva o botão junto. O iframe
+  // que instalou este script nem sempre reexecuta, então esperar por ele para
+  // remontar era apostar — e o botão sumia. Uma vigia curta torna a remontagem
+  // independente do que o Streamlit decidir refazer: o reconhecimento, esse,
+  // nunca reinicia, porque mora aqui e não no botão.
+  function montar() {
     const slot = D.getElementById('voz-slot');
-    if (!slot) {
-      if ((tentativa || 0) < 40) W.setTimeout(() => montar((tentativa || 0) + 1), 50);
-      return;
-    }
-    if (slot.contains(ctrl.botao)) { pintar(); return; }
+    if (!slot || slot.contains(ctrl.botao)) { pintar(); return; }
 
     slot.textContent = '';
     ctrl.botao = D.createElement('button');
     ctrl.botao.type = 'button';
     ctrl.botao.className = 'voz-botao';
     ctrl.botao.disabled = !Fala;
-    ctrl.botao.onclick = () => (ctrl.ligado ? parar() : iniciar());
+    ctrl.botao.onclick = () => (ctrl.querendo ? parar() : iniciar());
 
     ctrl.status = D.createElement('span');
     ctrl.status.className = 'voz-status';
 
     slot.appendChild(ctrl.botao);
     slot.appendChild(ctrl.status);
+    ctrl.recado = '';
     pintar();
   }
 
   W.__acervoVoz = {
     montar,
     modo: (continuo) => {
+      if (continuo === ctrl.continuo) return;
       ctrl.continuo = continuo;
-      if (ctrl.ligado) { parar(); iniciar(); }
+      // `continuous` só vale no start; para valer agora, a sessão recomeça
+      if (ctrl.querendo) { parar(); W.setTimeout(iniciar, 300); }
     },
     // usado pelos testes de interface: injeta uma frase sem passar pelo microfone
     dizer: enviar,
+    estado: () => ({ querendo: ctrl.querendo, rodando: ctrl.rodando, recado: ctrl.recado }),
   };
   montar();
 })();
@@ -442,8 +606,6 @@ _PONTE_JS = """
 
 
 def _injetar_ponte() -> None:
-    import json
-
     script = (
         _PONTE_JS
         .replace("__ATIVACOES__", json.dumps(list(cmd.ATIVACOES)))
@@ -454,7 +616,10 @@ def _injetar_ponte() -> None:
     st.iframe(script, height=1)
 
 
-_CORES_BADGE = {"ok": "voz-ok", "aviso": "voz-aviso", "erro": "voz-erro", "ajuda": "voz-ok"}
+_CORES_BADGE = {
+    "ok": "voz-ok", "aviso": "voz-aviso", "erro": "voz-erro",
+    "ajuda": "voz-ok", "saudacao": "voz-ok",
+}
 
 
 def painel() -> None:
@@ -471,15 +636,16 @@ def painel() -> None:
         col_campo.text_input(
             "Comando de voz",
             key=COMANDO,
-            placeholder="Fale ou digite um comando: “ir para o dashboard”, “buscar regressão”…",
+            placeholder="Comece pelo nome: “Luiz, como fazer um group by no pandas”…",
             label_visibility="collapsed",
             on_change=_receber,
         )
 
         with col_ajuda.popover("Comandos", width="stretch"):
             st.markdown(
-                '<span class="card-meta">Fale ou digite qualquer uma destas frases. '
-                'Com a escuta contínua ligada, comece por <b>“assistente…”</b>.</span>',
+                '<span class="card-meta">Toda frase começa por <b>“Luiz”</b> — falada '
+                'ou digitada. Pergunte com as suas palavras: o que não for um dos '
+                'comandos abaixo vira busca no acervo.</span>',
                 unsafe_allow_html=True,
             )
             for grupo, frases in cmd.EXEMPLOS:
@@ -491,16 +657,18 @@ def painel() -> None:
             st.checkbox(
                 "Escuta contínua",
                 key=ESCUTA_CONTINUA,
-                help="Deixa o microfone sempre aberto; só executa frases que comecem "
-                     "por “assistente”, “computador” ou “acervo”.",
+                help="Deixa o microfone sempre aberto. Como toda frase precisa "
+                     "começar por “Luiz”, a conversa em volta não vira comando.",
             )
 
         ultimo = st.session_state.get(ULTIMO)
         if ultimo:
             nivel, mensagem = ultimo
             classe = _CORES_BADGE.get(nivel, "voz-aviso")
+            # `mensagem` carrega o que a pessoa falou, e o badge é HTML cru:
+            # sem escapar, uma transcrição com "<" come o resto da barra
             st.markdown(
-                f'<div class="voz-badge {classe}">{mensagem}</div>',
+                f'<div class="voz-badge {classe}">{html.escape(mensagem)}</div>',
                 unsafe_allow_html=True,
             )
         if ultimo and ultimo[0] == "ajuda":
